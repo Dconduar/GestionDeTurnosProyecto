@@ -1,7 +1,6 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { Worker } = require('worker_threads');
 
 const RUTA_DB = path.join(os.tmpdir(), `turnos-rf07-${process.pid}-${Date.now()}.db`);
 process.env.DB_PATH = RUTA_DB;
@@ -10,6 +9,7 @@ const Database = require('better-sqlite3');
 const request = require('supertest');
 const app = require('../src/server/app');
 const db = require('../src/server/db');
+const solicitudesSimultaneas = require('./helpers/solicitudesSimultaneas');
 
 function crearTurno(servicioId, { prioridad = 'normal', numero } = {}) {
   const { siguiente } = db
@@ -209,44 +209,21 @@ describe('RF-07 servicios y mostradores vinculados a cada turno', () => {
     for (let i = 3; i <= 10; i += 1) mostradores.push(crearMostrador(`Mostrador ${i}`, [2]));
     const esperados = Array.from({ length: 6 }, () => crearTurno(2));
 
-    // Cada worker abre su propia conexión a SQLite; con Promise.all sobre la conexión síncrona
-    // de better-sqlite3 las escrituras nunca coincidirían.
-    const barrera = new SharedArrayBuffer(4);
-    const workers = mostradores.map(
-      (mostradorId) =>
-        new Worker(path.join(__dirname, 'helpers', 'llamarSiguienteEnWorker.js'), {
-          workerData: { rutaDb: RUTA_DB, mostradorId, barrera },
-        })
+    const respuestas = await solicitudesSimultaneas(
+      RUTA_DB,
+      mostradores.map((mostradorId) => ({
+        metodo: 'post',
+        url: '/api/recepcion/llamar-siguiente',
+        cuerpo: { mostrador_id: mostradorId },
+      }))
     );
-    const listos = workers.map((w) => new Promise((resolve) => w.once('message', resolve)));
-    const resultados = workers.map(
-      (w) =>
-        new Promise((resolve, reject) => {
-          w.on('message', (m) => m.tipo === 'resultado' && resolve(m));
-          w.once('error', reject);
-        })
-    );
-    const terminados = workers.map((w) => new Promise((resolve) => w.once('exit', resolve)));
-
-    await Promise.all(listos);
-    // Mientras otra conexión retiene el bloqueo de escritura, todas las solicitudes quedan
-    // esperando a la vez y compiten por la fila cuando se libera.
-    const bloqueo = new Database(RUTA_DB);
-    bloqueo.exec('BEGIN IMMEDIATE');
-    Atomics.store(new Int32Array(barrera), 0, 1);
-    Atomics.notify(new Int32Array(barrera), 0);
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    bloqueo.exec('ROLLBACK');
-    bloqueo.close();
-    const respuestas = await Promise.all(resultados);
-    await Promise.all(terminados);
 
     const exitosas = respuestas.filter((r) => r.status === 201);
     const sinTurno = respuestas.filter((r) => r.status === 409);
     expect(exitosas).toHaveLength(esperados.length);
     expect(sinTurno).toHaveLength(mostradores.length - esperados.length);
-    expect(sinTurno.every((r) => r.codigo === 'FILA_VACIA')).toBe(true);
-    expect(exitosas.map((r) => r.id).sort((x, y) => x - y)).toEqual(esperados);
+    expect(sinTurno.every((r) => r.cuerpo.codigo === 'FILA_VACIA')).toBe(true);
+    expect(exitosas.map((r) => r.cuerpo.id).sort((x, y) => x - y)).toEqual(esperados);
 
     const asignaciones = db
       .prepare(
