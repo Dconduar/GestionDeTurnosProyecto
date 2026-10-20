@@ -343,12 +343,12 @@ stateDiagram-v2
 
 ## 6. Criterios de revisión antes de cerrar GES-38
 
-- [ ] El diagrama general incluye los cuatro actores solicitados y los casos de uso principales.
-- [ ] Cada caso de uso tiene actor, precondiciones, flujo principal, flujos alternativos y resultado.
-- [ ] RF-07 se integra con RF-04 sin modificar el modelo vigente.
-- [ ] Los nombres de estados y las reglas de prioridad coinciden con `modelo-de-datos.md`.
+- [x] El diagrama general incluye los cuatro actores solicitados y los casos de uso principales.
+- [x] Cada caso de uso tiene actor, precondiciones, flujo principal, flujos alternativos y resultado.
+- [x] RF-07 se integra con RF-04 sin modificar el modelo vigente.
+- [x] Los nombres de estados y las reglas de prioridad coinciden con `modelo-de-datos.md`.
 - [ ] Se revisan con los responsables las partes pendientes de definir en RF-06, RF-09 y RF-10.
-- [ ] Los diagramas UML se pueden abrir y editar en draw.io; el Markdown visualiza los diagramas Mermaid en GitHub.
+- [x] Los diagramas UML se pueden abrir y editar en draw.io; el Markdown visualiza los diagramas Mermaid en GitHub.
 
 ## 7. Notas para la integración
 
