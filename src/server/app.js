@@ -27,6 +27,12 @@ app.use('/api', (req, res) => {
 });
 
 app.use((err, req, res, next) => {
+  if (err.expose && err.status >= 400 && err.status < 500) {
+    return res.status(err.status).json({
+      error: 'La solicitud no es válida. Revisa los datos enviados.',
+      codigo: 'SOLICITUD_INVALIDA',
+    });
+  }
   console.error(err);
   res.status(500).json({ error: 'Error interno del servidor' });
 });
