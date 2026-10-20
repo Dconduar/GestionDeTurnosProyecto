@@ -93,7 +93,10 @@ describe('NFR-05 persistencia entre reinicios del servidor', () => {
     await detenerServidor(segundo);
 
     expect(consultado.status).toBe(200);
-    expect(consultado.body).toEqual(creado);
+    const { token_cancelacion, ...datosTurno } = creado;
+    expect(token_cancelacion).toMatch(/^[a-f0-9]{64}$/);
+    expect(consultado.body).toEqual(datosTurno);
+    expect(consultado.body).not.toHaveProperty('token_cancelacion');
     expect(fila.body.fila.map((t) => t.id)).toEqual([creado.id]);
   }, 30000);
 
