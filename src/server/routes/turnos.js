@@ -1,25 +1,8 @@
 const express = require('express');
 const db = require('../db');
+const { horarioDeHoy, atencionAbierta } = require('../horario');
 
 const router = express.Router();
-
-function horarioDeHoy() {
-  return db
-    .prepare(
-      `SELECT hora_inicio, hora_fin
-         FROM horarios_atencion
-        WHERE activo = 1
-          AND dia_semana = CAST(strftime('%w', 'now', 'localtime') AS INTEGER)
-        ORDER BY hora_inicio`
-    )
-    .all();
-}
-
-function atencionAbierta() {
-  if (process.env.IGNORAR_HORARIO === '1') return true;
-  const { ahora } = db.prepare("SELECT strftime('%H:%M', 'now', 'localtime') AS ahora").get();
-  return horarioDeHoy().some((h) => h.hora_inicio <= ahora && ahora < h.hora_fin);
-}
 
 function codigoTurno(prefijo, numero) {
   return `${prefijo}-${String(numero).padStart(3, '0')}`;
