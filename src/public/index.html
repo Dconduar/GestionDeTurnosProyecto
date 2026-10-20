@@ -6,15 +6,108 @@
   <title>Gestión de Turnos</title>
   <link rel="stylesheet" href="/css/estilos.css">
 </head>
-<body>
-  <header>
-    <h1>Gestión de Turnos</h1>
-    <p>Elige tu pantalla:</p>
+<body class="bandas">
+  <header class="barra">
+    <div class="contenedor barra-interna">
+      <a class="logo" href="/"><span class="logo-marca" aria-hidden="true"></span>Gestión de Turnos</a>
+      <nav class="enlaces" aria-label="Principal">
+        <a class="enlace-barra" href="#funciones">Funciones</a>
+        <a class="enlace-barra" href="#tecnologia">Tecnología</a>
+        <a class="enlace-barra" href="/recepcion.html">Personal</a>
+        <a class="boton boton-principal" href="/cliente.html" style="width:auto;min-width:0;min-height:2.75rem;padding:.6rem 1.25rem;font-size:1rem">Tomar turno</a>
+      </nav>
+    </div>
   </header>
+
   <main>
-    <p><a class="boton" href="/cliente.html">Tomar un turno</a></p>
-    <p><a class="boton" href="/recepcion.html">Panel del recepcionista</a></p>
-    <p><a class="boton" href="/admin.html">Administración</a></p>
+    <!-- Presentación -->
+    <section class="inicio-hero">
+      <div class="contenedor inicio-grid">
+        <div>
+          <span class="etiqueta etiqueta-acento">Atención al cliente sin filas confusas</span>
+          <h1>Toma tu turno y olvídate de la fila.</h1>
+          <p class="hero-texto">Sin cuenta y sin dar tus datos. Elige el servicio, recibe tu número y mira cómo avanza la fila en tiempo real.</p>
+          <div class="acciones">
+            <a class="boton boton-principal boton-grande" href="/cliente.html">Tomar turno ahora</a>
+            <a class="boton boton-grande" href="/recepcion.html">Soy del personal</a>
+          </div>
+          <p class="nota">Sin registro. No guardamos nombre, teléfono ni correo.</p>
+        </div>
+
+        <!-- Vista previa de la conversación (ejemplo ilustrativo) -->
+        <div class="tarjeta tarjeta-destacada chat" role="img"
+             aria-label="Ejemplo: el cliente elige Trámite y recibe el turno T-012, con 3 personas antes y unos 15 minutos de espera aproximada.">
+          <div class="chat-cabecera" aria-hidden="true">
+            <strong>Así se ve tu turno</strong>
+            <span class="etiqueta etiqueta-acento">Ejemplo</span>
+          </div>
+          <div class="chat-cuerpo" aria-hidden="true">
+            <div class="burbuja">¿Qué necesitas hoy?</div>
+            <div class="chat-opciones">
+              <span class="opcion">Consulta general</span>
+              <span class="opcion opcion-elegida">Trámite</span>
+              <span class="opcion">Pagos</span>
+            </div>
+            <div class="burbuja burbuja-usuario">Trámite</div>
+            <div class="burbuja"><span id="demo-respuesta" class="escribiendo"></span></div>
+          </div>
+          <div class="chat-pie" aria-hidden="true">Vista ilustrativa. Los números reales dependen de la fila.</div>
+          <p class="sr-only" id="demo-texto">Listo. Tu turno es T-012. Hay 3 personas antes que tú; la espera aproximada es de 15 minutos.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Funciones -->
+    <section class="banda banda-blanca" id="funciones">
+      <div class="contenedor">
+        <div class="encabezado-seccion">
+          <h2>Todo lo que necesitas para esperar tranquilo</h2>
+          <p>Pensado para que cualquier persona tome su turno en menos de 30 segundos.</p>
+        </div>
+        <div class="rejilla rejilla-4">
+          <article class="tarjeta">
+            <span class="icono" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3z"/></svg></span>
+            <h3>Sin cuenta, sin datos</h3>
+            <p class="texto-suave">No pedimos nombre, teléfono ni correo. Solo recibes un número de turno.</p>
+          </article>
+          <article class="tarjeta">
+            <span class="icono" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+            <h3>Fila en tiempo real</h3>
+            <p class="texto-suave">La pantalla se actualiza sola cada 2 segundos, sin recargar la página.</p>
+          </article>
+          <article class="tarjeta">
+            <span class="icono" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg></span>
+            <h3>Cancela cuando quieras</h3>
+            <p class="texto-suave">Si ya no lo necesitas, cancela tu turno mientras esperas y la fila avanza.</p>
+          </article>
+          <article class="tarjeta">
+            <span class="icono" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12M6 21h12M7 3v4l5 5-5 5v4M17 3v4l-5 5 5 5v4"/></svg></span>
+            <h3>Espera aproximada</h3>
+            <p class="texto-suave">Una estimación basada en turnos anteriores. Es una referencia, no una promesa.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Llamado a la acción -->
+    <section class="banda banda-acento">
+      <div class="contenedor cta">
+        <div>
+          <h2>¿Listo? Toma tu turno en menos de 30 segundos.</h2>
+          <p>Elige el servicio y recibe tu número al instante.</p>
+        </div>
+        <a class="boton boton-blanco boton-grande" href="/cliente.html">Tomar turno ahora</a>
+      </div>
+    </section>
   </main>
+
+  <footer class="pie">
+    <div class="contenedor pie-interno">
+      <p>Proyecto final de Análisis de Sistemas II</p>
+      <p><a href="/cliente.html">Cliente</a> · <a href="/recepcion.html">Recepción</a> · <a href="/admin.html">Administración</a></p>
+    </div>
+  </footer>
+
+  <script src="/js/inicio.js"></script>
 </body>
 </html>
