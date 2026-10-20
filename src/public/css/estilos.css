@@ -250,7 +250,35 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 .cta { display: grid; gap: 1.5rem; align-items: center; }
 .cta p { margin: 0; font-size: 1.25rem; opacity: .95; }
 
+/* Panel del recepcionista */
+.panel-barra { display: grid; gap: .5rem; align-items: end; margin-bottom: 1.5rem; }
+.panel-barra .campo { margin-bottom: 0; }
+.panel-resumen { margin: 0; font-size: 1rem; }
+.panel-grid { display: grid; gap: 1rem; margin-bottom: 1rem; }
+.panel-grid .tarjeta { min-width: 0; }
+.panel-grid .boton-principal { margin-top: 1rem; }
+.turno-llamado {
+  margin: .5rem 0 .75rem;
+  padding: .75rem;
+  text-align: center;
+  font-size: clamp(2.5rem, 14vw, 4.5rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--blanco);
+  background: var(--morado);
+  border-radius: 20px;
+}
+.celda-codigo { font-weight: 700; white-space: nowrap; }
+.lista-otros { display: grid; gap: .5rem; margin: 0; padding: 0; list-style: none; }
+.lista-otros li { padding: .6rem 1rem; background: var(--blanco); border: var(--borde); border-radius: var(--radio-menor); }
+.acciones .boton { flex: 1 1 9rem; }
+#aviso-conexion { color: var(--tinta); background: #fef3c7; border: 1px solid #fcd34d; }
+
 @media (min-width: 48rem) {
+  .panel-barra { grid-template-columns: minmax(12rem, 20rem) 1fr; gap: 1.5rem; }
+  .panel-resumen { text-align: right; }
+  .panel-grid .boton-principal { width: 100%; }
   .enlace-barra { display: inline-block; }
   .rejilla-2 { grid-template-columns: repeat(2, 1fr); }
   .rejilla-3 { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
@@ -258,6 +286,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
   .cta { grid-template-columns: 1fr auto; }
 }
 @media (min-width: 60rem) {
+  .panel-grid { grid-template-columns: 1fr 1fr; align-items: start; }
   .inicio-grid { grid-template-columns: 1.05fr .95fr; }
   .rejilla-4 { grid-template-columns: repeat(4, 1fr); }
 }

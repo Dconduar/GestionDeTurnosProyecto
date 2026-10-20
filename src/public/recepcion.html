@@ -24,9 +24,58 @@
 
     <section class="banda banda-gris">
       <div class="contenedor">
-        <div class="tarjeta tarjeta-suave">
-          <h2>En construcción</h2>
-          <p>Pantalla en construcción (GES-19, GES-20, GES-21).</p>
+        <p id="cargando">Cargando…</p>
+
+        <p id="aviso" class="aviso" role="alert" hidden></p>
+        <p id="aviso-conexion" class="aviso" role="status" hidden>Sin conexión con el servidor. Reintentando…</p>
+
+        <div id="panel" hidden>
+          <div class="panel-barra">
+            <div class="campo panel-mostrador">
+              <label for="mostrador">Mostrador</label>
+              <select id="mostrador"></select>
+            </div>
+            <p id="resumen" class="panel-resumen texto-suave" aria-live="polite"></p>
+          </div>
+
+          <div class="panel-grid">
+            <section class="tarjeta tarjeta-destacada" aria-labelledby="titulo-atencion">
+              <h2 id="titulo-atencion">En atención</h2>
+              <div id="atencion-vacia">
+                <p class="texto-suave">No tienes ningún turno en atención.</p>
+              </div>
+              <div id="atencion" hidden>
+                <p id="atencion-codigo" class="turno-llamado" aria-live="polite"></p>
+                <p id="atencion-servicio" class="texto-suave"></p>
+                <p id="atencion-llamados" class="texto-suave"></p>
+                <div class="acciones">
+                  <button id="btn-llamar" class="boton" type="button">Volver a llamar</button>
+                  <button id="btn-no-asistio" class="boton boton-oscuro" type="button">No asistió</button>
+                </div>
+                <p id="atencion-nota" class="nota"></p>
+              </div>
+              <button id="btn-siguiente" class="boton boton-principal boton-grande" type="button">Llamar al siguiente</button>
+            </section>
+
+            <section class="tarjeta" aria-labelledby="titulo-fila">
+              <h2 id="titulo-fila">Fila de espera</h2>
+              <p id="fila-vacia" class="texto-suave" hidden>No hay turnos esperando para este mostrador.</p>
+              <div id="fila-contenedor" class="tabla-contenedor" hidden>
+                <table class="tabla">
+                  <thead>
+                    <tr><th scope="col">Turno</th><th scope="col">Servicio</th><th scope="col">Espera</th></tr>
+                  </thead>
+                  <tbody id="fila-cuerpo"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+
+          <section class="tarjeta tarjeta-gris panel-otros" aria-labelledby="titulo-otros">
+            <h2 id="titulo-otros">Otros mostradores</h2>
+            <p id="otros-vacio" class="texto-suave">Ningún otro mostrador está atendiendo ahora.</p>
+            <ul id="otros-lista" class="lista-otros"></ul>
+          </section>
         </div>
       </div>
     </section>
@@ -37,5 +86,7 @@
       <p>Proyecto final de Análisis de Sistemas II</p>
     </div>
   </footer>
+
+  <script src="/js/recepcion.js"></script>
 </body>
 </html>
