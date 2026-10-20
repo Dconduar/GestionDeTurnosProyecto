@@ -12,5 +12,15 @@ if (RUTA_DB !== ':memory:') {
 }
 
 db.exec(fs.readFileSync(RUTA_SCHEMA, 'utf8'));
+// Migración para bases de datos existentes
+const columnasTurnos = db.prepare('PRAGMA table_info(turnos)').all();
+
+const existeTokenCancelacion = columnasTurnos.some(
+  (columna) => columna.name === 'token_cancelacion_hash'
+);
+
+if (!existeTokenCancelacion) {
+  db.exec('ALTER TABLE turnos ADD COLUMN token_cancelacion_hash TEXT');
+}
 
 module.exports = db;

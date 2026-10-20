@@ -112,3 +112,203 @@ describe('GET /api/turnos/:id', () => {
     expect(res.body.codigo).toBe('TURNO_NO_ENCONTRADO');
   });
 });
+
+describe('Cancelar turno y actualizar la fila', () => {
+
+  async function crearTurnoDePrueba() {
+    const respuesta = await request(app)
+      .post('/api/turnos')
+      .send({ tipo_servicio_id: 1 });
+
+    expect(respuesta.status).toBe(201);
+    return respuesta.body;
+  }
+
+  test('genera un token privado al crear el turno', async () => {
+    const turno = await crearTurnoDePrueba();
+
+    expect(turno.token_cancelacion).toMatch(/^[a-f0-9]{64}$/);
+
+    const registro = db.prepare(
+      'SELECT token_cancelacion_hash FROM turnos WHERE id = ?'
+    ).get(turno.id);
+
+    expect(registro.token_cancelacion_hash).toMatch(/^[a-f0-9]{64}$/);
+    expect(registro.token_cancelacion_hash).not.toBe(
+      turno.token_cancelacion
+    );
+  });
+
+  test('no expone el token al consultar un turno', async () => {
+    const turno = await crearTurnoDePrueba();
+
+    const respuesta = await request(app)
+      .get(`/api/turnos/${turno.id}`);
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body).not.toHaveProperty('token_cancelacion');
+    expect(respuesta.body).not.toHaveProperty('token_cancelacion_hash');
+  });
+
+  test('cancela un turno en espera con el token correcto', async () => {
+    const turno = await crearTurnoDePrueba();
+
+    const respuesta = await request(app)
+      .patch(`/api/turnos/${turno.id}/cancelar`)
+      .send({
+        token_cancelacion: turno.token_cancelacion,
+      });
+
+    expect(respuesta.status).toBe(200);
+    expect(respuesta.body.turno.estado).toBe('cancelado');
+
+    const registro = db.prepare(
+      'SELECT estado FROM turnos WHERE id = ?'
+    ).get(turno.id);
+
+    expect(registro.estado).toBe('cancelado');
+  });
+
+  test('rechaza la cancelación sin token', async () => {
+    const turno = await crearTurnoDePrueba();
+
+    const respuesta = await request(app)
+      .patch(`/api/turnos/${turno.id}/cancelar`)
+      .send({});
+
+    expect(respuesta.status).toBe(403);
+    expect(respuesta.body.codigo).toBe(
+      'TOKEN_CANCELACION_INVALIDO'
+    );
+
+    const registro = db.prepare(
+      'SELECT estado FROM turnos WHERE id = ?'
+    ).get(turno.id);
+
+    expect(registro.estado).toBe('esperando');
+  });
+
+  test('rechaza la cancelación con un token incorrecto', async () => {
+    const turno = await crearTurnoDePrueba();
+
+    const respuesta = await request(app)
+      .patch(`/api/turnos/${turno.id}/cancelar`)
+      .send({
+        token_cancelacion: 'a'.repeat(64),
+      });
+
+    expect(respuesta.status).toBe(403);
+    expect(respuesta.body.codigo).toBe(
+      'TOKEN_CANCELACION_INVALIDO'
+    );
+
+    const registro = db.prepare(
+      'SELECT estado FROM turnos WHERE id = ?'
+    ).get(turno.id);
+
+    expect(registro.estado).toBe('esperando');
+  });
+
+  test('no permite cancelar dos veces el mismo turno', async () => {
+    const turno = await crearTurnoDePrueba();
+
+    const url = `/api/turnos/${turno.id}/cancelar`;
+    const datos = {
+      token_cancelacion: turno.token_cancelacion,
+    };
+
+    const primera = await request(app)
+      .patch(url)
+      .send(datos);
+
+    const segunda = await request(app)
+      .patch(url)
+      .send(datos);
+
+    expect(primera.status).toBe(200);
+    expect(segunda.status).toBe(409);
+    expect(segunda.body.codigo).toBe(
+      'CANCELACION_NO_PERMITIDA'
+    );
+  });
+
+  test('no permite cancelar un turno atendido', async () => {
+    const turno = await crearTurnoDePrueba();
+
+    db.prepare(
+      "UPDATE turnos SET estado = 'atendido' WHERE id = ?"
+    ).run(turno.id);
+
+    const respuesta = await request(app)
+      .patch(`/api/turnos/${turno.id}/cancelar`)
+      .send({
+        token_cancelacion: turno.token_cancelacion,
+      });
+
+    expect(respuesta.status).toBe(409);
+    expect(respuesta.body.codigo).toBe(
+      'CANCELACION_NO_PERMITIDA'
+    );
+
+    const registro = db.prepare(
+      'SELECT estado FROM turnos WHERE id = ?'
+    ).get(turno.id);
+
+    expect(registro.estado).toBe('atendido');
+  });
+
+  test('devuelve 404 cuando el turno no existe', async () => {
+    const respuesta = await request(app)
+      .patch('/api/turnos/9999/cancelar')
+      .send({
+        token_cancelacion: 'a'.repeat(64),
+      });
+
+    expect(respuesta.status).toBe(404);
+    expect(respuesta.body.codigo).toBe(
+      'TURNO_NO_ENCONTRADO'
+    );
+  });
+
+  test('excluye los turnos cancelados de la fila de recepción', async () => {
+    const turnoCancelado = await crearTurnoDePrueba();
+    const turnoEnEspera = await crearTurnoDePrueba();
+
+    const cancelacion = await request(app)
+      .patch(`/api/turnos/${turnoCancelado.id}/cancelar`)
+      .send({
+        token_cancelacion: turnoCancelado.token_cancelacion,
+      });
+
+    expect(cancelacion.status).toBe(200);
+
+    const respuesta = await request(app)
+      .get('/api/recepcion/fila')
+      .query({ mostrador_id: 1 });
+
+    expect(respuesta.status).toBe(200);
+
+    const ids = respuesta.body.fila.map((turno) => turno.id);
+
+    expect(ids).not.toContain(turnoCancelado.id);
+    expect(ids).toContain(turnoEnEspera.id);
+  });
+
+  test('no reutiliza el número de un turno cancelado', async () => {
+    const primero = await crearTurnoDePrueba();
+
+    const cancelacion = await request(app)
+      .patch(`/api/turnos/${primero.id}/cancelar`)
+      .send({
+        token_cancelacion: primero.token_cancelacion,
+      });
+
+    expect(cancelacion.status).toBe(200);
+
+    const segundo = await crearTurnoDePrueba();
+
+    expect(primero.numero).toBe(1);
+    expect(segundo.numero).toBe(2);
+  });
+
+});

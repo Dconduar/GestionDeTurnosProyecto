@@ -69,7 +69,8 @@ CREATE TABLE IF NOT EXISTS turnos (
     espera_estimada_seg   INTEGER CHECK (espera_estimada_seg IS NULL OR espera_estimada_seg >= 0),
     inicio_atencion       TEXT,                                 
     fin_atencion          TEXT,                                 
-    duracion_seg          INTEGER CHECK (duracion_seg IS NULL OR duracion_seg >= 0),  
+    duracion_seg          INTEGER CHECK (duracion_seg IS NULL OR duracion_seg >= 0),
+    token_cancelacion_hash TEXT,
     UNIQUE (fecha, numero)
 );
 
