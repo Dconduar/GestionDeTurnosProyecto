@@ -17,8 +17,10 @@
     servicio: document.getElementById('atencion-servicio'),
     llamados: document.getElementById('atencion-llamados'),
     nota: document.getElementById('atencion-nota'),
+    resultado: document.getElementById('atencion-resultado'),
     btnLlamar: document.getElementById('btn-llamar'),
     btnNoAsistio: document.getElementById('btn-no-asistio'),
+    btnAtendido: document.getElementById('btn-atendido'),
     btnSiguiente: document.getElementById('btn-siguiente'),
     filaVacia: document.getElementById('fila-vacia'),
     filaContenedor: document.getElementById('fila-contenedor'),
@@ -50,6 +52,12 @@
     if (minutos < 1) return 'Menos de 1 min';
     if (minutos < 60) return minutos + ' min';
     return Math.floor(minutos / 60) + ' h ' + (minutos % 60) + ' min';
+  }
+
+  function textoDuracion(segundos) {
+    var minutos = Math.floor(segundos / 60);
+    if (minutos < 1) return segundos + ' s';
+    return minutos + ' min ' + (segundos % 60) + ' s';
   }
 
   function mostrarAviso(texto, esInfo) {
@@ -122,6 +130,7 @@
     var sinLlamadosPorHacer = turno.llamados >= turno.max_llamados;
     el.btnLlamar.disabled = enviando || !datos.abierto || sinLlamadosPorHacer;
     el.btnNoAsistio.disabled = enviando || !turno.puede_marcar_no_asistio;
+    el.btnAtendido.disabled = enviando;
 
     if (turno.puede_marcar_no_asistio) {
       el.nota.textContent = 'Se hicieron todos los llamados. Si no responde, márcalo como "no asistió".';
@@ -212,16 +221,21 @@
       .then(function () { consultando = false; });
   }
 
-  function ejecutar(promesa) {
+  function ejecutar(promesa, alCompletar) {
     if (enviando) return;
     enviando = true;
     el.btnSiguiente.disabled = true;
     el.btnLlamar.disabled = true;
     el.btnNoAsistio.disabled = true;
+    el.btnAtendido.disabled = true;
+    el.resultado.hidden = true;
     limpiarAviso();
 
     promesa()
-      .then(function () { limpiarAviso(); })
+      .then(function (respuesta) {
+        limpiarAviso();
+        if (alCompletar) alCompletar(respuesta);
+      })
       .catch(function (error) {
         if (error.http) {
           mostrarAviso(error.message, error.codigo === 'FUERA_DE_HORARIO');
@@ -231,6 +245,7 @@
       })
       .then(function () {
         enviando = false;
+        el.btnAtendido.textContent = 'Atendido';
         return consultar();
       });
   }
@@ -251,9 +266,24 @@
     ejecutar(function () { return enviarJson('/api/recepcion/turnos/' + id + '/no-asistio', 'PATCH'); });
   });
 
+  el.btnAtendido.addEventListener('click', function () {
+    if (enviando || !estado || !estado.en_atencion) return;
+    var id = estado.en_atencion.id;
+    el.btnAtendido.textContent = 'Guardando…';
+    ejecutar(
+      function () { return enviarJson('/api/recepcion/turnos/' + id + '/atendido', 'PATCH'); },
+      function (turno) {
+        el.resultado.textContent = 'Turno ' + turno.codigo + ' atendido. Duración: ' +
+          textoDuracion(turno.duracion_seg) + '.';
+        el.resultado.hidden = false;
+      }
+    );
+  });
+
   el.mostrador.addEventListener('change', function () {
     mostradorId = el.mostrador.value;
     guardarMostrador(mostradorId);
+    el.resultado.hidden = true;
     limpiarAviso();
     consultar();
   });

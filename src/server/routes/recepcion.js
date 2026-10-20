@@ -21,6 +21,8 @@ const SQL_TURNO = `
          t.mostrador_id,
          t.registrado_en,
          t.inicio_atencion,
+         t.fin_atencion,
+         t.duracion_seg,
          s.id      AS servicio_id,
          s.nombre  AS servicio_nombre,
          s.prefijo AS servicio_prefijo,
@@ -46,6 +48,8 @@ function turnoRecepcion(fila, maximo) {
     puede_marcar_no_asistio: fila.estado === 'en_atencion' && fila.llamados >= maximo,
     registrado_en: fila.registrado_en,
     inicio_atencion: fila.inicio_atencion,
+    fin_atencion: fila.fin_atencion,
+    duracion_seg: fila.duracion_seg,
     espera_seg: Math.max(0, fila.espera_seg || 0),
   };
 }
@@ -142,6 +146,28 @@ const marcarNoAsistio = db.transaction((turnoId, mostradorId) => {
   return { id: turnoId };
 });
 
+const marcarAtendido = db.transaction((turnoId, mostradorId) => {
+  const turno = db
+    .prepare('SELECT id, estado, mostrador_id, inicio_atencion FROM turnos WHERE id = ?')
+    .get(turnoId);
+  if (!turno) return { error: 'TURNO_NO_ENCONTRADO' };
+  if (turno.estado !== 'en_atencion' || turno.mostrador_id !== mostradorId) {
+    return { error: 'TURNO_NO_LLAMABLE' };
+  }
+  const { fin, duracion } = db
+    .prepare(
+      `SELECT fin,
+              CAST(strftime('%s', fin) AS INTEGER) - CAST(strftime('%s', ?) AS INTEGER) AS duracion
+         FROM (SELECT datetime('now', 'localtime') AS fin)`
+    )
+    .get(turno.inicio_atencion);
+  if (!Number.isInteger(duracion) || duracion < 0) return { error: 'INICIO_INVALIDO' };
+  db.prepare(
+    "UPDATE turnos SET estado = 'atendido', fin_atencion = ?, duracion_seg = ? WHERE id = ?"
+  ).run(fin, duracion, turnoId);
+  return { id: turnoId };
+});
+
 const ERRORES = {
   YA_HAY_TURNO_EN_ATENCION: [409, 'Ya tienes un turno en atención. Termínalo antes de llamar al siguiente.'],
   FILA_VACIA: [409, 'No hay turnos esperando para este mostrador.'],
@@ -149,6 +175,7 @@ const ERRORES = {
   TURNO_NO_LLAMABLE: [409, 'Ese turno no está en atención en este mostrador.'],
   MAXIMO_LLAMADOS: [409, 'Ya se hicieron todos los llamados permitidos. Marca el turno como "no asistió".'],
   LLAMADOS_INSUFICIENTES: [409, 'Aún no se completan los llamados necesarios para marcar "no asistió".'],
+  INICIO_INVALIDO: [409, 'El turno no tiene una hora de inicio válida; no se puede calcular la duración.'],
 };
 
 function responderError(res, codigo) {
@@ -227,6 +254,15 @@ router.patch('/turnos/:id(\\d+)/no-asistio', (req, res) => {
   if (!mostrador) return;
 
   const resultado = marcarNoAsistio.immediate(Number(req.params.id), mostrador.id);
+  if (resultado.error) return responderError(res, resultado.error);
+  res.json(turnoRecepcion(turnoPorId(resultado.id), maxLlamados()));
+});
+
+router.patch('/turnos/:id(\\d+)/atendido', (req, res) => {
+  const mostrador = mostradorOError(req.body && req.body.mostrador_id, res);
+  if (!mostrador) return;
+
+  const resultado = marcarAtendido.immediate(Number(req.params.id), mostrador.id);
   if (resultado.error) return responderError(res, resultado.error);
   res.json(turnoRecepcion(turnoPorId(resultado.id), maxLlamados()));
 });
