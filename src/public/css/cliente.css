@@ -1,0 +1,72 @@
+/* Elegir servicio */
+.servicios { display: grid; gap: .75rem; margin-bottom: 1.5rem; }
+
+.servicio {
+  display: block;
+  width: 100%;
+  min-height: 5rem;
+  padding: 1.1rem 1.4rem;
+  text-align: left;
+  font: inherit;
+  color: var(--tinta);
+  background: var(--blanco);
+  border: 1px solid var(--desactivado);
+  border-radius: var(--radio-tarjeta);
+  cursor: pointer;
+}
+.servicio:hover { border-color: var(--morado); }
+.servicio[aria-checked="true"] {
+  background: var(--morado-suave);
+  border-color: var(--morado);
+  box-shadow: inset 0 0 0 1px var(--morado);
+}
+
+.servicio-nombre { display: block; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+.servicio-desc { display: block; font-size: 1rem; color: var(--texto-suave); }
+.servicio[aria-checked="true"] .servicio-nombre { color: var(--morado-oscuro); }
+.servicio[aria-checked="true"] .servicio-nombre::after { content: " ✓"; }
+
+/* Mi turno */
+.ticket {
+  padding: 1.5rem;
+  background: var(--blanco);
+  border: var(--borde);
+  border-radius: var(--radio-tarjeta);
+  box-shadow: var(--sombra);
+}
+
+.turno-codigo {
+  margin: .5rem 0 1rem;
+  padding: 1rem;
+  text-align: center;
+  font-size: clamp(3.5rem, 20vw, 6rem);
+  font-weight: 700;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  color: var(--blanco);
+  background: var(--morado);
+  border-radius: 24px;
+}
+
+.turno-detalle { margin: .5rem 0; color: var(--texto-suave); }
+
+.turno-estado {
+  display: inline-block;
+  margin: .75rem 0;
+  padding: .5rem 1.25rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--tinta);
+  background: var(--gris);
+  border: var(--borde);
+  border-radius: var(--radio-tarjeta);
+}
+/* Cuando lo llaman: resalta con el acento */
+.turno-estado.llamado { font-size: 1.5rem; color: var(--morado-oscuro); background: var(--morado-suave); border-color: var(--morado); }
+
+.ticket .boton { margin-top: .75rem; }
+
+@media (min-width: 48rem) {
+  .servicios { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+  .ticket { padding: 2rem; }
+}

@@ -1,6 +1,3 @@
-// Prueba del esqueleto: el servidor responde y la base de datos se crea con el
-// esquema. Usa una base de datos en memoria para no tocar database/turnos.db.
-
 process.env.DB_PATH = ':memory:';
 
 const request = require('supertest');

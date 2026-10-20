@@ -5,15 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Tomar turno - Gestión de Turnos</title>
   <link rel="stylesheet" href="/css/estilos.css">
+  <link rel="stylesheet" href="/css/cliente.css">
 </head>
-<body>
-  <header>
-    <h1>Tomar turno</h1>
-    <p><a href="/">Volver al inicio</a></p>
+<body class="bandas">
+  <header class="barra">
+    <div class="contenedor barra-interna">
+      <a class="logo" href="/"><span class="logo-marca" aria-hidden="true"></span>Gestión de Turnos</a>
+      <a class="boton boton-ghost" href="/">Inicio</a>
+    </div>
   </header>
+
   <main>
-    <p>Pantalla en construcción (GES-15, GES-16, GES-17).</p>
-    <!-- TODO: contenido de esta pantalla. Script propio en /js/cliente.js -->
+    <section class="banda-titulo">
+      <div class="contenedor">
+        <h1>Toma tu turno</h1>
+        <p class="hero-texto">Sin cuenta y sin dar tus datos. Elige el servicio y listo.</p>
+      </div>
+    </section>
+
+    <section class="banda banda-gris">
+      <div class="contenedor">
+        <p id="cargando">Cargando…</p>
+
+        <p id="aviso" class="aviso" role="alert" hidden></p>
+
+        <section id="vista-servicios" hidden>
+          <h2>¿Qué necesitas?</h2>
+          <div id="lista-servicios" class="servicios" role="radiogroup" aria-label="Tipo de servicio"></div>
+          <button id="btn-tomar" class="boton boton-principal" type="button" disabled>Tomar turno</button>
+        </section>
+
+        <section id="vista-turno" class="ticket" hidden>
+          <h2 id="turno-titulo">Tu turno</h2>
+          <p id="turno-codigo" class="turno-codigo" aria-live="polite"></p>
+          <p id="turno-servicio" class="turno-detalle"></p>
+          <p id="turno-estado" class="turno-estado"></p>
+          <p id="turno-nota" class="turno-detalle"></p>
+          <button id="btn-nuevo" class="boton" type="button" hidden>Tomar otro turno</button>
+        </section>
+      </div>
+    </section>
   </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <p>Tu turno no guarda nombre, teléfono ni correo.</p>
+    </div>
+  </footer>
+
+  <script src="/js/cliente.js"></script>
 </body>
 </html>
