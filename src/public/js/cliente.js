@@ -22,6 +22,7 @@
     codigo: document.getElementById('turno-codigo'),
     servicio: document.getElementById('turno-servicio'),
     estado: document.getElementById('turno-estado'),
+    espera: document.getElementById('turno-espera'),
     nota: document.getElementById('turno-nota'),
     btnCancelar: document.getElementById('btn-cancelar'),
     btnNuevo: document.getElementById('btn-nuevo'),
@@ -245,6 +246,26 @@
 
     if (turno.estado === 'en_atencion' && turno.mostrador) {
       el.estado.textContent = 'Pase al ' + turno.mostrador;
+    }
+
+    // Mostrar la espera estimada mientras el turno está pendiente.
+    const esperaValida =
+      Number.isFinite(turno.espera_estimada_seg) &&
+      turno.espera_estimada_seg >= 0;
+
+    el.espera.hidden = !(
+      turno.estado === 'esperando' && esperaValida
+    );
+
+    if (!el.espera.hidden) {
+      const minutos = Math.ceil(turno.espera_estimada_seg / 60);
+
+      el.espera.textContent =
+        minutos === 0
+          ? 'Tiempo de espera aproximado: atención próxima.'
+          : `Tiempo de espera aproximado: ${minutos} minuto${minutos === 1 ? '' : 's'}.`;
+    } else {
+      el.espera.textContent = '';
     }
 
     if (final) {
