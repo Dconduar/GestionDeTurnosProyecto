@@ -1,6 +1,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
+const { calcularEsperaEstimada } = require('../estimacion');
 const { horarioDeHoy, atencionAbierta } = require('../horario');
 
 const router = express.Router();
@@ -72,6 +73,18 @@ const crearTurno = db.transaction((tipoServicioId, tokenHash) => {
       VALUES (?, ?, ?, ?)
     `)
     .run(hoy, siguiente, tipoServicioId, tokenHash);
+
+  // Calcular la espera del turno recién creado.
+  const esperaEstimada = calcularEsperaEstimada(
+    Number(info.lastInsertRowid)
+  );
+
+  // Guardar la estimación en la base de datos.
+  db.prepare(`
+    UPDATE turnos
+    SET espera_estimada_seg = ?
+    WHERE id = ?
+  `).run(esperaEstimada, info.lastInsertRowid);
 
   return info.lastInsertRowid;
 });
