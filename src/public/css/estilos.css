@@ -1,26 +1,15 @@
-/* Estilos compartidos por todas las pantallas.
-   Estilo minimalista: tonos neutros y un único acento morado.
-   Reglas del diseño:
-   - Neutros (blanco, grises, tinta) para casi todo; el morado solo para lo importante:
-     botón principal, elemento elegido y números de turno.
-   - Bordes finos y esquinas redondeadas; sombra muy suave solo en tarjetas destacadas.
-   - Letra grande y alto contraste (NFR-01). Botones de al menos 44 px de alto.
-   Guía de uso para el equipo: docs/guia-de-estilo.md */
-
 :root {
-  /* Acento (morado) */
   --morado: #6d28d9;
   --morado-hover: #5b21b6;
-  --morado-oscuro: #4c1d95;   /* texto morado sobre fondos claros */
-  --morado-suave: #f5f3ff;    /* fondo suave del acento */
+  --morado-oscuro: #4c1d95;   
+  --morado-suave: #f5f3ff;    
   --morado-borde: #ddd6fe;
-  /* Neutros */
   --tinta: #18181b;
   --blanco: #fff;
-  --fondo: #fafafa;           /* fondo de página */
-  --gris: #f4f4f5;            /* superficies secundarias */
-  --linea: #e4e4e7;           /* bordes */
-  --texto-suave: #52525b;     /* textos secundarios */
+  --fondo: #fafafa;           
+  --gris: #f4f4f5;            
+  --linea: #e4e4e7;           
+  --texto-suave: #52525b;     
   --desactivado: #d4d4d8;
 
   --borde: 1px solid var(--linea);
@@ -31,6 +20,7 @@
 }
 
 * { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
 body {
   margin: 0;
@@ -63,7 +53,7 @@ a { color: var(--morado); font-weight: 600; }
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-/* ---------- Pantallas con bandas (body class="bandas") ---------- */
+/*Pantallas con bandas*/
 
 body.bandas main,
 body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
@@ -97,7 +87,7 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 .pie-interno { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; }
 .pie a { color: var(--texto-suave); font-weight: 500; }
 
-/* ---------- Botones ---------- */
+/*Botones*/
 
 .boton {
   display: inline-block;
@@ -135,7 +125,7 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 }
 .boton-principal:hover { background: var(--morado-hover); border-color: var(--morado-hover); color: var(--blanco); }
 .boton-grande { min-height: 3.75rem; padding: 1.1rem 2rem; font-size: 1.25rem; }
-.boton-principal.boton-compacto { width: auto; min-width: 0; min-height: 2.75rem; padding: .6rem 1.25rem; font-size: 1rem; }
+.boton-principal.boton-compacto { white-space: nowrap;width: auto; min-width: 0; min-height: 2.75rem; padding: .6rem 1.25rem; font-size: 1rem; }
 
 .boton:disabled {
   color: #71717a;
@@ -146,7 +136,7 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 .boton:disabled:hover { background: var(--gris); }
 .boton:disabled:active { transform: none; }
 
-/* ---------- Tarjetas ---------- */
+/*Tarjetas*/
 
 .rejilla { display: grid; gap: 1rem; }
 
@@ -181,7 +171,7 @@ a.tarjeta h2, a.tarjeta h3 { color: var(--tinta); }
 }
 .icono svg { width: 1.375rem; height: 1.375rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-/* ---------- Avisos ---------- */
+/*Avisos*/
 
 /* Aviso de error: oscuro con texto blanco */
 .aviso {
@@ -195,7 +185,7 @@ a.tarjeta h2, a.tarjeta h3 { color: var(--tinta); }
 /* Aviso informativo: morado suave */
 .aviso.info { color: var(--morado-oscuro); background: var(--morado-suave); border: 1px solid var(--morado-borde); }
 
-/* ---------- Etiquetas (estados) ---------- */
+/*Etiquetas*/
 
 .etiqueta {
   display: inline-block;
@@ -212,7 +202,7 @@ a.tarjeta h2, a.tarjeta h3 { color: var(--tinta); }
 .etiqueta-solida { color: var(--blanco); background: var(--morado); border-color: var(--morado); }
 .etiqueta-oscura { color: var(--blanco); background: var(--tinta); border-color: var(--tinta); }
 
-/* ---------- Formularios ---------- */
+/*Formularios*/
 
 .campo { display: grid; gap: .375rem; margin-bottom: 1rem; }
 label { font-weight: 600; }
@@ -229,7 +219,7 @@ input, select, textarea {
 input::placeholder, textarea::placeholder { color: #71717a; }
 input:focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--morado); outline: 3px solid var(--morado-borde); outline-offset: 0; }
 
-/* ---------- Tablas ---------- */
+/*Tablas*/
 
 .tabla-contenedor { overflow-x: auto; background: var(--blanco); border: var(--borde); border-radius: 16px; }
 .tabla { width: 100%; border-collapse: collapse; font-size: 1rem; }
@@ -239,7 +229,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 
 .texto-suave { color: var(--texto-suave); }
 
-/* ---------- Página de inicio ---------- */
+/*Página de inicio*/
 
 .inicio-hero {
   padding: 5rem 0 4.5rem;
@@ -263,7 +253,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 .cta { display: grid; gap: 1.5rem; align-items: center; }
 .cta p { margin: 0; font-size: 1.25rem; opacity: .95; }
 
-/* ---------- Pantallas grandes ---------- */
+/*Pantallas grandes */
 @media (min-width: 48rem) {
   .enlace-barra { display: inline-block; }
   .rejilla-2 { grid-template-columns: repeat(2, 1fr); }
@@ -277,4 +267,16 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 
 @media (prefers-reduced-motion: reduce) {
   * { scroll-behavior: auto !important; }
+}
+
+/*Pantallas pequeñas*/
+@media (max-width: 47.99rem) {
+  .banda { padding: 2rem 0; }
+  .banda-titulo { padding: 1.75rem 0; }
+  .inicio-hero { padding: 3rem 0 2.5rem; }
+  .tarjeta { padding: 1.25rem; }
+  .acciones .boton-grande { width: 100%; }
+  .barra-interna { gap: .5rem; }
+  .barra-interna .boton { white-space: nowrap; padding-left: 1rem; padding-right: 1rem; }
+  .logo { font-size: 1rem; }
 }
