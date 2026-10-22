@@ -329,11 +329,17 @@
     var mio = fila.mi_turno;
     var enAtencion = fila.en_atencion || [];
 
-    el.filaAtendiendo.textContent = enAtencion.length === 0
-      ? 'Nadie por ahora'
-      : enAtencion.map(function (t) {
-          return t.mostrador ? t.codigo + ' (' + t.mostrador + ')' : t.codigo;
-        }).join(', ');
+        el.filaAtendiendo.textContent = '';
+    if (enAtencion.length === 0) {
+      el.filaAtendiendo.textContent = 'Nadie por ahora';
+    }
+    enAtencion.forEach(function (t) {
+      
+      var linea = document.createElement('span');
+      linea.className = 'fila-linea';
+      linea.textContent = t.mostrador ? t.codigo + ' (' + t.mostrador + ')' : t.codigo;
+      el.filaAtendiendo.appendChild(linea);
+    });;
 
     var esperando = mio && mio.estado === 'esperando';
 
