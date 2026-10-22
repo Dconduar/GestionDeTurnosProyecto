@@ -64,6 +64,14 @@
 /* Cuando lo llaman: resalta con el acento */
 .turno-estado.llamado { font-size: 1.5rem; color: var(--morado-oscuro); background: var(--morado-suave); border-color: var(--morado); }
 
+/* Estado de la fila en tiempo real (RF-02) */
+.fila-panel { margin: 1rem 0; padding: 1rem 1.25rem; text-align: left; background: var(--gris); border: var(--borde); border-radius: var(--radio-tarjeta); }
+.fila-titulo { margin: 0 0 .5rem; font-weight: 700; color: var(--tinta); }
+.fila-hora { font-weight: 400; font-size: .85rem; color: var(--texto-suave); }
+.fila-datos { margin: 0; display: grid; gap: .5rem; }
+.fila-datos dt { font-size: .85rem; color: var(--texto-suave); }
+.fila-datos dd { margin: 0; font-size: 1.15rem; font-weight: 700; color: var(--tinta); }
+
 .ticket .boton { margin-top: .75rem; }
 
 @media (min-width: 48rem) {

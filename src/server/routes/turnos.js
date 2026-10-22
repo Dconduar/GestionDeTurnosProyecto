@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const db = require('../db');
 const { calcularEsperaEstimada } = require('../estimacion');
 const { horarioDeHoy, atencionAbierta } = require('../horario');
+const { estadoDeLaFila } = require('../fila');
 
 const router = express.Router();
 
@@ -166,6 +167,16 @@ router.post('/', (req, res) => {
     ...turnoPublico(turno),
     token_cancelacion: tokenCancelacion,
   });
+});
+
+// Estado de la fila en tiempo real (RF-02).
+// ?turno=<id> opcional: agrega cuántos turnos van antes y la espera aproximada.
+router.get('/fila', (req, res) => {
+  const bruto = req.query.turno;
+  const id = /^\d+$/.test(String(bruto)) ? Number(bruto) : 0;
+
+  res.set('Cache-Control', 'no-store');
+  res.json(estadoDeLaFila(id > 0 ? id : null));
 });
 
 // Consultar un turno por su ID
