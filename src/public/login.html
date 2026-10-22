@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Iniciar sesión - Gestión de Turnos</title>
+  <link rel="stylesheet" href="/css/estilos.css">
+</head>
+<body class="bandas">
+  <header class="barra">
+    <div class="contenedor barra-interna">
+      <a class="logo" href="/"><span class="logo-marca" aria-hidden="true"></span>Gestión de Turnos</a>
+      <a class="boton boton-ghost" href="/">Inicio</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="banda-titulo">
+      <div class="contenedor">
+        <h1>Iniciar sesión</h1>
+        <p class="hero-texto">Acceso para recepcionistas y administradores.</p>
+      </div>
+    </section>
+
+    <section class="banda banda-gris">
+      <div class="contenedor">
+        <form id="formulario" class="tarjeta" style="max-width: 28rem">
+          <div class="campo">
+            <label for="usuario">Usuario</label>
+            <input id="usuario" type="text" autocomplete="username" required autofocus>
+          </div>
+          <div class="campo">
+            <label for="contrasena">Contraseña</label>
+            <input id="contrasena" type="password" autocomplete="current-password" required>
+          </div>
+          <button class="boton boton-principal" type="submit">Entrar</button>
+          <p id="mensaje" class="aviso" role="alert" hidden></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <p>Proyecto final de Análisis de Sistemas II</p>
+    </div>
+  </footer>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>
