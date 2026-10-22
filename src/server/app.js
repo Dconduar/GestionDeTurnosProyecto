@@ -2,14 +2,17 @@ const path = require('path');
 const express = require('express');
 const db = require('./db');
 
+const { sesion } = require('./auth');
+const { crearUsuariosIniciales } = require('./usuarios-iniciales');
 const turnos = require('./routes/turnos');
 const recepcion = require('./routes/recepcion');
 const admin = require('./routes/admin');
 const reportes = require('./routes/reportes');
-
+  crearUsuariosIniciales();
 const app = express();
 
 app.use(express.json());
+app.use(sesion);
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 app.get('/api/salud', (req, res) => {

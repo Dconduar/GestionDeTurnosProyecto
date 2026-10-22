@@ -24,9 +24,21 @@
     estado: document.getElementById('turno-estado'),
     espera: document.getElementById('turno-espera'),
     nota: document.getElementById('turno-nota'),
+    filaPanel: document.getElementById('fila-panel'),
+    filaActualizada: document.getElementById('fila-actualizada'),
+    filaAtendiendo: document.getElementById('fila-atendiendo'),
+    filaDelante: document.getElementById('fila-delante'),
+    filaEspera: document.getElementById('fila-espera'),
+    filaAviso: document.getElementById('fila-aviso'),
     btnCancelar: document.getElementById('btn-cancelar'),
     btnNuevo: document.getElementById('btn-nuevo'),
   };
+
+  var INTERVALO_FILA_MS = 2000;
+  var temporizadorFila = null;
+  var consultandoFila = false;
+  var estadoMostrado = null;
+  var mostradorMostrado = null;
 
   var servicioElegido = null;
   var enviando = false;
@@ -230,6 +242,8 @@
 
   function dibujarTurno(turno) {
     var final = ESTADOS_FINALES.indexOf(turno.estado) !== -1;
+    estadoMostrado = turno.estado;
+    mostradorMostrado = turno.mostrador || null;
     var guardado = leerTurnoGuardado();
 
     el.codigo.textContent = turno.codigo;
@@ -289,6 +303,110 @@
 
     limpiarAviso();
     mostrarVista('turno');
+
+    if (final) {
+      detenerSeguimientoFila();
+      el.filaPanel.hidden = true;
+    } else {
+      iniciarSeguimientoFila(turno.id);
+    }
+  }
+
+  // ---- Estado de la fila en tiempo real (RF-02) ----
+
+  function textoEspera(segundos) {
+    if (!Number.isFinite(segundos) || segundos < 0) {
+      return 'No disponible por ahora';
+    }
+
+    var minutos = Math.ceil(segundos / 60);
+
+    if (minutos === 0) return 'Atención próxima';
+    return 'Aprox. ' + minutos + ' minuto' + (minutos === 1 ? '' : 's');
+  }
+
+  function dibujarFila(fila) {
+    var mio = fila.mi_turno;
+    var enAtencion = fila.en_atencion || [];
+
+        el.filaAtendiendo.textContent = '';
+    if (enAtencion.length === 0) {
+      el.filaAtendiendo.textContent = 'Nadie por ahora';
+    }
+    enAtencion.forEach(function (t) {
+      
+      var linea = document.createElement('span');
+      linea.className = 'fila-linea';
+      linea.textContent = t.mostrador ? t.codigo + ' (' + t.mostrador + ')' : t.codigo;
+      el.filaAtendiendo.appendChild(linea);
+    });;
+
+    var esperando = mio && mio.estado === 'esperando';
+
+    el.filaDelante.textContent = esperando && Number.isFinite(mio.delante)
+      ? String(mio.delante)
+      : '—';
+
+    el.filaEspera.textContent = esperando
+      ? textoEspera(mio.espera_estimada_seg)
+      : '—';
+
+    el.filaAviso.hidden = true;
+    el.filaActualizada.textContent = '· se actualiza cada 2 s';
+    el.filaPanel.hidden = false;
+  }
+
+  function consultarFila(turnoId) {
+    if (consultandoFila) return;
+    consultandoFila = true;
+
+    pedirJson('/api/turnos/fila?turno=' + encodeURIComponent(turnoId), { cache: 'no-store' })
+      .then(function (fila) {
+        var mio = fila.mi_turno;
+        if (!mio) {
+          detenerSeguimientoFila();
+          olvidarTurno();
+          cargarServicios();
+          return;
+        }
+
+        dibujarFila(fila);
+
+        // Solo se redibuja la tarjeta si cambió el estado o el mostrador,
+        // para no borrar avisos que el cliente aún esté leyendo.
+        if (mio.estado === estadoMostrado && mio.mostrador === mostradorMostrado) return;
+
+        return pedirJson('/api/turnos/' + encodeURIComponent(turnoId), { cache: 'no-store' })
+          .then(function (turno) {
+            dibujarTurno(turno);
+          });
+      })
+      .catch(function () {
+        el.filaAviso.textContent =
+          'No pudimos actualizar la fila. Seguimos intentando…';
+        el.filaAviso.hidden = false;
+        el.filaPanel.hidden = false;
+      })
+      .then(function () {
+        consultandoFila = false;
+      });
+  }
+
+  function iniciarSeguimientoFila(turnoId) {
+    if (temporizadorFila !== null) return;
+
+    consultarFila(turnoId);
+    temporizadorFila = setInterval(function () {
+      if (document.hidden) return;
+      consultarFila(turnoId);
+    }, INTERVALO_FILA_MS);
+  }
+
+  function detenerSeguimientoFila() {
+    if (temporizadorFila !== null) {
+      clearInterval(temporizadorFila);
+      temporizadorFila = null;
+    }
   }
 
   // Cancelar el turno del cliente
