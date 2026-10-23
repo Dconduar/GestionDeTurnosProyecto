@@ -5,12 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administración - Gestión de Turnos</title>
   <link rel="stylesheet" href="/css/estilos.css">
+  <style>
+    .rejilla { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0 1rem; }
+    .casilla { display: flex; align-items: center; gap: .6rem; font-weight: 400; }
+    .casilla input { width: auto; min-height: auto; }
+    .botones { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+    .tabla .botones { margin: 0; }
+    .horario-dia { display: grid; grid-template-columns: 8rem 7rem 1fr 1fr; gap: .75rem; align-items: center; margin-bottom: .75rem; }
+    .horario-dia input[type="time"] { min-width: 0; }
+    @media (max-width: 40rem) { .horario-dia { grid-template-columns: 1fr 1fr; } }
+  </style>
 </head>
 <body class="bandas">
   <header class="barra">
     <div class="contenedor barra-interna">
       <a class="logo" href="/"><span class="logo-marca" aria-hidden="true"></span>Gestión de Turnos</a>
-      <a class="boton boton-ghost" href="/">Inicio</a>
+      <div class="botones">
+        <span id="usuario-actual" class="etiqueta etiqueta-acento" hidden></span>
+        <button id="cerrar-sesion" class="boton boton-ghost" type="button" hidden>Cerrar sesión</button>
+      </div>
     </div>
   </header>
 
@@ -18,15 +31,81 @@
     <section class="banda-titulo">
       <div class="contenedor">
         <h1>Administración</h1>
-        <p class="hero-texto">Servicios, mostradores, horarios y reportes.</p>
+        <p class="hero-texto">Configura los servicios, los mostradores y los horarios de atención.</p>
       </div>
     </section>
 
     <section class="banda banda-gris">
       <div class="contenedor">
-        <div class="tarjeta tarjeta-suave">
-          <h2>En construcción</h2>
-          <p>Pantalla en construcción (GES-7, GES-8).</p>
+        <p id="mensaje" class="aviso" role="status" aria-live="polite" hidden></p>
+
+        <div id="sin-permiso" class="tarjeta tarjeta-suave" hidden>
+          <h2>Solo para administradores</h2>
+          <p>Tu usuario no tiene permiso para configurar el sistema. <a href="/login.html">Entrar con otra cuenta</a></p>
+        </div>
+
+        <div id="contenido" hidden>
+          <!-- Servicios -->
+          <div class="tarjeta" style="margin-bottom: 1.5rem">
+            <h2>Servicios</h2>
+            <p class="texto-suave">Los servicios no se borran: se desactivan, y dejan de ofrecerse al cliente.</p>
+            <div class="tabla-contenedor" style="margin-bottom: 1.5rem">
+              <table class="tabla">
+                <thead><tr><th>Prefijo</th><th>Servicio</th><th>Duración (min)</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="tabla-servicios"></tbody>
+              </table>
+            </div>
+            <form id="form-servicio">
+              <h3 id="titulo-servicio">Nuevo servicio</h3>
+              <input type="hidden" id="servicio-id">
+              <div class="rejilla">
+                <div class="campo"><label for="servicio-nombre">Nombre</label><input id="servicio-nombre" maxlength="100" required></div>
+                <div class="campo"><label for="servicio-prefijo">Prefijo (1 a 3 letras)</label><input id="servicio-prefijo" maxlength="3" required></div>
+                <div class="campo"><label for="servicio-duracion">Duración estimada (min)</label><input id="servicio-duracion" type="number" min="1" max="600" value="10" required></div>
+                <div class="campo"><label for="servicio-descripcion">Descripción (opcional)</label><input id="servicio-descripcion" maxlength="255"></div>
+              </div>
+              <div class="botones">
+                <button class="boton boton-principal boton-compacto" type="submit">Guardar servicio</button>
+                <button id="cancelar-servicio" class="boton" type="button" hidden>Cancelar edición</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Mostradores -->
+          <div class="tarjeta" style="margin-bottom: 1.5rem">
+            <h2>Mostradores</h2>
+            <p class="texto-suave">Cada mostrador atiende solo los servicios que marques.</p>
+            <div class="tabla-contenedor" style="margin-bottom: 1.5rem">
+              <table class="tabla">
+                <thead><tr><th>Mostrador</th><th>Atiende</th><th>Estado</th><th>Acciones</th></tr></thead>
+                <tbody id="tabla-mostradores"></tbody>
+              </table>
+            </div>
+            <form id="form-mostrador">
+              <h3 id="titulo-mostrador">Nuevo mostrador</h3>
+              <input type="hidden" id="mostrador-id">
+              <div class="campo"><label for="mostrador-nombre">Nombre</label><input id="mostrador-nombre" maxlength="100" required></div>
+              <fieldset style="border: 0; padding: 0; margin: 0 0 1rem">
+                <legend style="font-weight: 600; margin-bottom: .5rem">Servicios que atiende</legend>
+                <div id="mostrador-servicios" class="rejilla"></div>
+              </fieldset>
+              <div class="botones">
+                <button class="boton boton-principal boton-compacto" type="submit">Guardar mostrador</button>
+                <button id="cancelar-mostrador" class="boton" type="button" hidden>Cancelar edición</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Horarios -->
+          <div class="tarjeta">
+            <h2>Horarios de atención</h2>
+            <p class="texto-suave">Fuera de estos horarios el cliente no puede tomar turno.</p>
+            <form id="form-horarios">
+              <div id="horarios-dias"></div>
+              <p id="nota-horarios" class="texto-suave" hidden></p>
+              <button class="boton boton-principal boton-compacto" type="submit">Guardar horarios</button>
+            </form>
+          </div>
         </div>
       </div>
     </section>
@@ -37,5 +116,7 @@
       <p>Proyecto final de Análisis de Sistemas II</p>
     </div>
   </footer>
+
+  <script src="/js/admin.js"></script>
 </body>
 </html>
