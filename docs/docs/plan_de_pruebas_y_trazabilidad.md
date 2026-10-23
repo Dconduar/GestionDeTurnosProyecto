@@ -39,6 +39,28 @@ NFR-02: Rendimiento	El sistema soporta 100 usuarios concurrentes manteniendo tie
 NFR-04: Login y roles	Las contrasenas estan protegidas mediante bcryptjs y las sesiones se gestionan correctamente.	Supertest	tests/auth.test.js	Listo
 NFR-05: Persistencia	La base de datos conserva la informacion ante errores o reinicios inesperados.	SQLite / Jest	tests/turnos.test.js	Listo
 NFR-06: Cobertura de pruebas	Todas las pruebas automatizadas se ejecutan correctamente sin errores.	Jest CLI	npm test	Listo
+Plan de Pruebas y Matriz de Trazabilidad (Version Final)
+
+(GES-30, GES-31, GES-34)
+
+Estado: Aprobado (10/10 suites, 119/119 pruebas superadas)
+
+Matriz de Trazabilidad Final
+ID Requerimiento	Descripcion	Nivel	Archivo de Prueba	Estado	ResultadoRF-01	Tomar turno sin cuenta	Integracion	tests/turno.test.js	Aprobado	Codigo 201 y codigo generado
+RF-02	Consultar fila en vivo	Integracion	tests/fila.test.js	Aprobado	Retorna fila activa
+RF-03	Cancelar turno	Integracion	tests/turno.test.js	Aprobado	Estado cambia a cancelado
+RF-04	Llamar siguiente turno	Integracion	tests/recepcion.test.js	Aprobado	Pasa a en_atencion y ventanilla
+RF-05	Marcar atendido y duracion	Integracion	tests/marcarAtendido.test.js	Aprobado	Registra fin y duracion
+RF-06	No asistio tras llamados	Integracion	tests/recepcion.test.js	Aprobado	Marca no_asistio al 3er llamado
+RF-07	Servicios y mostradores	Integracion	tests/serviciosMostradores.test.js	Aprobado	Integridad referencial valida
+RF-08	Panel de administracion	Integracion	tests/auth.test.js	Aprobado	Bloqueo por rol
+RF-09	Reportes analiticos	Integracion	tests/reportes.test.js	Aprobado	SQL GROUP BY devuelve metricas
+RF-10	Estimacion de espera	Unitaria	tests/estimacion.test.js	Aprobado	Calculo algoritmico verificado
+NFR-02	Rendimiento (100 clientes)	Carga	autocannon (HTTP 200)	Aprobado	18.17 ms avg / p99: 35 ms
+NFR-04	Login y contrasenas	Seguridad	tests/auth.test.js	Aprobado	Hash seguro y sesiones activas
+NFR-05	Persistencia transaccional	Integracion	tests/persistencia.test.js	Aprobado	Integridad en SQLite
+NFR-06	Suite automatizada	CI / Test	npm test	Aprobado	119 pruebas pasando
+
 3. Ejemplos de Pruebas
 3.1 Prueba Unitaria: Calculo de Tiempo de Espera
 
