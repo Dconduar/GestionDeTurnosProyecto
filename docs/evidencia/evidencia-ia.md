@@ -73,6 +73,12 @@ Este documento reúne las interacciones, decisiones, modificaciones y evidencias
 
 **Aclaración:** Los documentos de GES-44 se prepararon manualmente con apoyo de ChatGPT. No se ejecutaron los comandos de generación de Spec Kit para esta parte del trabajo.
 
+### 2.6. Diego — Uso de Claude en GES-6, GES-48, GES-43, GES-8, GES-7, GES-49 a GES-51 y revisión de integridad
+
+**Herramienta:** Claude (claude.ai y Claude Code).
+
+El detalle por issue, la trazabilidad con Spec Kit y el registro completo de la revisión de integridad del 24 de octubre de 2026 están en [`uso-de-claude-sdd.md`](uso-de-claude-sdd.md).
+
 ## 3. Validación general del proyecto
 
 Después de integrar los cambios recientes de la rama `main`, se ejecutó:

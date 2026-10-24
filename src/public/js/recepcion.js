@@ -156,18 +156,38 @@
     el.filaContenedor.hidden = !hay;
     datos.fila.forEach(function (turno) {
       var tr = document.createElement('tr');
+      var esPreferencial = turno.prioridad === 'preferencial';
       var codigo = celda(turno.codigo);
       codigo.className = 'celda-codigo';
-      if (turno.prioridad === 'preferencial') {
+      if (esPreferencial) {
         var marca = document.createElement('span');
         marca.className = 'etiqueta etiqueta-acento';
         marca.textContent = 'Preferencial';
         codigo.appendChild(document.createTextNode(' '));
         codigo.appendChild(marca);
       }
+
+      var accion = document.createElement('td');
+      var boton = document.createElement('button');
+      boton.type = 'button';
+      boton.className = 'boton boton-compacto';
+      boton.textContent = esPreferencial ? 'Quitar preferencial' : 'Marcar preferencial';
+      boton.disabled = enviando;
+      boton.addEventListener('click', function () {
+        ejecutar(function () {
+          return pedirJson('/api/recepcion/turnos/' + turno.id + '/preferencial', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ preferencial: !esPreferencial })
+          });
+        });
+      });
+      accion.appendChild(boton);
+
       tr.appendChild(codigo);
       tr.appendChild(celda(turno.servicio.nombre));
       tr.appendChild(celda(textoEspera(turno.espera_seg)));
+      tr.appendChild(accion);
       el.filaCuerpo.appendChild(tr);
     });
   }

@@ -1,50 +1,42 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+# Constitución de Gestión de Turnos
 
-## Core Principles
+## Principios fundamentales
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. Arquitectura sencilla y organizada
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+El sistema es una aplicación web cliente-servidor en capas: pantallas en HTML, CSS y JavaScript, API con Node.js y Express, y SQLite para guardar la información. Se mantiene la estructura existente del repositorio y no se agregan tecnologías ni componentes que no hagan falta.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### II. Seguridad y privacidad
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+El sistema no pide datos personales al cliente para darle un turno. Las operaciones del personal (recepción y administración) deben protegerse con inicio de sesión y roles. Las contraseñas y los tokens privados se guardan de forma segura, con hash, y las validaciones importantes se hacen en el servidor.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### III. Integridad y confiabilidad de los datos
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+Las operaciones que modifican turnos usan transacciones cuando es necesario, para evitar registros duplicados o cambios incompletos. Se respetan las transiciones válidas de estado de los turnos y la información se conserva al reiniciar el servidor.
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
+### IV. Calidad, pruebas y trazabilidad
 
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
+Cada requisito tiene una especificación clara con criterios de aceptación verificables. El código está documentado y se valida con pruebas unitarias y de integración, y cada requisito debe poder relacionarse con al menos una prueba. No se afirma que una funcionalidad está implementada o probada sin evidencia.
 
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+### V. Usabilidad y accesibilidad
 
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
+La interfaz usa mensajes claros en español y un diseño adaptable a distintos dispositivos. Se respetan los criterios de accesibilidad documentados en `docs/Ux.md`: contraste, legibilidad, navegación por teclado y retroalimentación al usuario.
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+## Restricciones técnicas
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+- **Frontend:** HTML, CSS y JavaScript.
+- **Backend:** Node.js y Express.
+- **Base de datos:** SQLite mediante `better-sqlite3`.
+- **Comunicación:** API REST con JSON.
+- **Actualización de la fila:** consultas periódicas cada 2 segundos.
+- **Acceso del cliente:** sin cuenta, desde el navegador del celular, también mediante un código QR.
+- **Alcance:** un establecimiento, con una meta de hasta 100 clientes simultáneos, pendiente de validación con pruebas de carga.
+
+## Flujo de desarrollo
+
+1. Revisar los requisitos y la documentación existente.
+2. Redactar la especificación con reglas y criterios de aceptación.
+3. Elaborar el plan técnico acorde con la arquitectura.
+4. Registrar cada tarea como issue en Linear.
+5. Implementar y ejecutar las pruebas correspondientes.
+6. Abrir un Pull Request con el ID del issue en el título y pedir revisión antes de integrar.

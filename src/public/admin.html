@@ -96,6 +96,29 @@
             </form>
           </div>
 
+          <div class="tarjeta" style="margin-bottom: 1.5rem">
+            <h2>Reportes</h2>
+            <p class="texto-suave">Turnos, espera promedio y duración promedio por servicio. Sin fechas se muestra todo el historial.</p>
+            <form id="form-reportes">
+              <div class="rejilla">
+                <div class="campo"><label for="reporte-desde">Desde</label><input id="reporte-desde" type="date"></div>
+                <div class="campo"><label for="reporte-hasta">Hasta</label><input id="reporte-hasta" type="date"></div>
+              </div>
+              <div class="botones" style="margin-bottom: 1rem">
+                <button class="boton boton-principal boton-compacto" type="submit">Consultar</button>
+                <button id="reporte-limpiar" class="boton boton-compacto" type="button">Todo el historial</button>
+                <button id="reporte-csv" class="boton boton-compacto" type="button">Descargar CSV</button>
+              </div>
+            </form>
+            <div class="tabla-contenedor">
+              <table class="tabla">
+                <thead><tr><th>Servicio</th><th>Turnos</th><th>Espera promedio (min)</th><th>Duración promedio (min)</th></tr></thead>
+                <tbody id="tabla-reportes"></tbody>
+              </table>
+            </div>
+            <p id="reporte-vacio" class="texto-suave" hidden>No hay servicios para mostrar.</p>
+          </div>
+
           <div class="tarjeta">
             <h2>Horarios de atención</h2>
             <p class="texto-suave">Fuera de estos horarios el cliente no puede tomar turno.</p>

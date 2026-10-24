@@ -149,6 +149,44 @@
   }
 
 
+  function rangoReportes() {
+    const parametros = new URLSearchParams();
+    const desde = $('reporte-desde').value;
+    const hasta = $('reporte-hasta').value;
+    if (desde) parametros.set('desde', desde);
+    if (hasta) parametros.set('hasta', hasta);
+    const texto = parametros.toString();
+    return texto ? `?${texto}` : '';
+  }
+
+  function rangoReportesValido() {
+    const desde = $('reporte-desde').value;
+    const hasta = $('reporte-hasta').value;
+    if (desde && hasta && desde > hasta) {
+      mostrarMensaje('La fecha inicial no puede ser posterior a la fecha final.');
+      return false;
+    }
+    return true;
+  }
+
+  function pintarReportes(reportes) {
+    $('reporte-vacio').hidden = reportes.length > 0;
+    $('tabla-reportes').innerHTML = reportes.map((f) => `
+      <tr>
+        <td><strong>${escapar(f.prefijo)}</strong> · ${escapar(f.servicio)}</td>
+        <td>${f.total_turnos}</td>
+        <td>${f.espera_promedio_min}</td>
+        <td>${f.duracion_promedio_min}</td>
+      </tr>`).join('');
+  }
+
+  async function cargarReportes() {
+    const r = await api(`/api/reportes${rangoReportes()}`);
+    if (!r.ok) return mostrarMensaje(r.datos.mensaje || 'No se pudieron cargar los reportes.');
+    pintarReportes(r.datos.reportes);
+  }
+
+
   $('form-servicio').addEventListener('submit', async (e) => {
     e.preventDefault();
     ocultarMensaje();
@@ -245,6 +283,23 @@
     pintarHorarios(r.datos);
   });
 
+  $('form-reportes').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    ocultarMensaje();
+    if (rangoReportesValido()) await cargarReportes();
+  });
+
+  $('reporte-limpiar').addEventListener('click', async () => {
+    ocultarMensaje();
+    $('form-reportes').reset();
+    await cargarReportes();
+  });
+
+  $('reporte-csv').addEventListener('click', () => {
+    ocultarMensaje();
+    if (rangoReportesValido()) window.location.href = `/api/reportes/csv${rangoReportes()}`;
+  });
+
   $('cerrar-sesion').addEventListener('click', async () => {
     await api('/api/admin/logout', { method: 'POST' });
     window.location.href = '/login.html';
@@ -264,6 +319,7 @@
     await cargarServicios();
     await cargarMostradores();
     await cargarHorarios();
+    await cargarReportes();
   }
 
   iniciar();

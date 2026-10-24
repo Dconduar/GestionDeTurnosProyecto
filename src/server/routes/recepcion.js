@@ -1,19 +1,18 @@
 const express = require('express');
 const db = require('../db');
-const { atencionAbierta, horarioPublico } = require('../horario');
+const { atencionAbierta, horarioPublico, responderFueraDeHorario } = require('../horario');
 const { requiereRol } = require('../auth');
+const { leerConfiguracion } = require('../estimacion');
+const { codigoTurno } = require('../fila');
 
 const router = express.Router();
 
 router.use(requiereRol('recepcionista', 'administrador'));
 
 const MOSTRADOR_POR_DEFECTO = 1;
-const MAX_LLAMADOS_POR_DEFECTO = 3;
 
 function maxLlamados() {
-  const fila = db.prepare("SELECT valor FROM configuracion WHERE clave = 'max_llamados'").get();
-  const valor = fila ? Number.parseInt(fila.valor, 10) : NaN;
-  return Number.isInteger(valor) && valor > 0 ? valor : MAX_LLAMADOS_POR_DEFECTO;
+  return leerConfiguracion('max_llamados', 3);
 }
 
 const SQL_TURNO = `
@@ -39,7 +38,7 @@ const SQL_TURNO = `
 function turnoRecepcion(fila, maximo) {
   return {
     id: fila.id,
-    codigo: `${fila.servicio_prefijo}-${String(fila.numero).padStart(3, '0')}`,
+    codigo: codigoTurno(fila.servicio_prefijo, fila.numero),
     numero: fila.numero,
     estado: fila.estado,
     prioridad: fila.prioridad,
@@ -76,14 +75,6 @@ function mostradorOError(valor, res) {
     return null;
   }
   return mostrador;
-}
-
-function cerradoError(res) {
-  res.status(409).json({
-    error: 'La atención está cerrada en este momento.',
-    codigo: 'FUERA_DE_HORARIO',
-    horario_hoy: horarioPublico(),
-  });
 }
 
 function turnoPorId(id) {
@@ -185,6 +176,7 @@ const ERRORES = {
   MAXIMO_LLAMADOS: [409, 'Ya se hicieron todos los llamados permitidos. Marca el turno como "no asistió".'],
   LLAMADOS_INSUFICIENTES: [409, 'Aún no se completan los llamados necesarios para marcar "no asistió".'],
   INICIO_INVALIDO: [409, 'El turno no tiene una hora de inicio válida; no se puede calcular la duración.'],
+  TURNO_NO_ESPERANDO: [409, 'Solo se puede cambiar la prioridad de un turno de hoy que sigue esperando.'],
 };
 
 function responderError(res, codigo) {
@@ -241,7 +233,7 @@ router.get('/fila', (req, res) => {
 router.post('/llamar-siguiente', (req, res) => {
   const mostrador = mostradorOError(mostradorSolicitado(req, req.body && req.body.mostrador_id), res);
   if (!mostrador) return;
-  if (!atencionAbierta()) return cerradoError(res);
+  if (!atencionAbierta()) return responderFueraDeHorario(res);
 
   const resultado = llamarSiguiente.immediate(mostrador.id, null);
   if (resultado.error) return responderError(res, resultado.error);
@@ -251,7 +243,7 @@ router.post('/llamar-siguiente', (req, res) => {
 router.post('/turnos/:id(\\d+)/llamar', (req, res) => {
   const mostrador = mostradorOError(mostradorSolicitado(req, req.body && req.body.mostrador_id), res);
   if (!mostrador) return;
-  if (!atencionAbierta()) return cerradoError(res);
+  if (!atencionAbierta()) return responderFueraDeHorario(res);
 
   const resultado = volverALlamar.immediate(Number(req.params.id), mostrador.id, null);
   if (resultado.error) return responderError(res, resultado.error);
@@ -272,6 +264,33 @@ router.patch('/turnos/:id(\\d+)/atendido', (req, res) => {
   if (!mostrador) return;
 
   const resultado = marcarAtendido.immediate(Number(req.params.id), mostrador.id);
+  if (resultado.error) return responderError(res, resultado.error);
+  res.json(turnoRecepcion(turnoPorId(resultado.id), maxLlamados()));
+});
+const cambiarPrioridad = db.transaction((turnoId, prioridad) => {
+  const turno = db.prepare('SELECT id, estado, fecha FROM turnos WHERE id = ?').get(turnoId);
+  if (!turno) return { error: 'TURNO_NO_ENCONTRADO' };
+
+  const { hoy } = db.prepare("SELECT date('now', 'localtime') AS hoy").get();
+  if (turno.estado !== 'esperando' || turno.fecha !== hoy) return { error: 'TURNO_NO_ESPERANDO' };
+
+  db.prepare('UPDATE turnos SET prioridad = ? WHERE id = ?').run(prioridad, turnoId);
+  return { id: turnoId };
+});
+
+router.patch('/turnos/:id(\\d+)/preferencial', (req, res) => {
+  const preferencial = req.body && req.body.preferencial;
+  if (typeof preferencial !== 'boolean') {
+    return res.status(400).json({
+      error: 'Indica si el turno es preferencial (true o false).',
+      codigo: 'PRIORIDAD_INVALIDA',
+    });
+  }
+
+  const resultado = cambiarPrioridad.immediate(
+    Number(req.params.id),
+    preferencial ? 'preferencial' : 'normal'
+  );
   if (resultado.error) return responderError(res, resultado.error);
   res.json(turnoRecepcion(turnoPorId(resultado.id), maxLlamados()));
 });

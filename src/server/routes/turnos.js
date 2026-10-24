@@ -2,14 +2,10 @@ const express = require('express');
 const crypto = require('crypto');
 const db = require('../db');
 const { calcularEsperaEstimada } = require('../estimacion');
-const { horarioDeHoy, atencionAbierta } = require('../horario');
-const { estadoDeLaFila } = require('../fila');
+const { atencionAbierta, horarioPublico, responderFueraDeHorario } = require('../horario');
+const { estadoDeLaFila, codigoTurno } = require('../fila');
 
 const router = express.Router();
-
-function codigoTurno(prefijo, numero) {
-  return `${prefijo}-${String(numero).padStart(3, '0')}`;
-}
 
 const SQL_TURNO = `
   SELECT t.*,
@@ -103,10 +99,7 @@ router.get('/servicios', (req, res) => {
 
   res.json({
     abierto: atencionAbierta(),
-    horario_hoy: horarioDeHoy().map((h) => ({
-      inicio: h.hora_inicio,
-      fin: h.hora_fin,
-    })),
+    horario_hoy: horarioPublico(),
     servicios,
   });
 });
@@ -124,16 +117,7 @@ router.post('/', (req, res) => {
     });
   }
 
-  if (!atencionAbierta()) {
-    return res.status(409).json({
-      error: 'La atención está cerrada en este momento.',
-      codigo: 'FUERA_DE_HORARIO',
-      horario_hoy: horarioDeHoy().map((h) => ({
-        inicio: h.hora_inicio,
-        fin: h.hora_fin,
-      })),
-    });
-  }
+  if (!atencionAbierta()) return responderFueraDeHorario(res);
 
   const servicio = db
     .prepare(`

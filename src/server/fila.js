@@ -97,4 +97,4 @@ function estadoDeLaFila(turnoId) {
   };
 }
 
-module.exports = { estadoDeLaFila };
+module.exports = { estadoDeLaFila, codigoTurno };

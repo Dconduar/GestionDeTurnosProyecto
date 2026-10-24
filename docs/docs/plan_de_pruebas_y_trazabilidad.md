@@ -1,108 +1,115 @@
-Plan de Pruebas y Matriz de Trazabilidad
+# Plan de pruebas
 
-Proyecto: Gestion de Turnos para Atencion al Cliente
- Responsable: Lucia Sandoval
- Herramientas: Jest (pruebas unitarias), Supertest (pruebas de integracion) y Autocannon (pruebas de rendimiento)
+**Proyecto:** Gestión de Turnos para Atención al Cliente  
+**Responsable:** Lucía Sandoval  
+**Issues:** GES-30, GES-31, GES-34  
+**Actualizado:** 24 de octubre de 2026, a partir de las pruebas actuales
 
-1. ¿Como se probara el sistema?
+## 1. Cómo se prueba el sistema
 
-Para garantizar el correcto funcionamiento del sistema se utilizaran tres tipos de pruebas:
+| Tipo | Herramienta | Qué valida |
+|---|---|---|
+| **Unitarias** | Jest | Funciones aisladas, por ejemplo el cálculo de la duración de un servicio y de la espera estimada (`src/server/estimacion.js`). |
+| **Integración** | Jest y Supertest | Rutas de la API, reglas del negocio y base de datos juntas: creación y cancelación de turnos, fila, llamados, atención, administración, reportes, login y QR. |
+| **Rendimiento** | Autocannon | Comportamiento con muchas peticiones simultáneas (NFR-02). |
+| **Manuales** | Navegador | Flujo del cliente en menos de 30 s (NFR-01), diseño responsive (NFR-03) y compatibilidad de navegadores (NFR-07). |
 
-Pruebas Unitarias (Jest)
+Las pruebas automatizadas usan una base SQLite en memoria (`DB_PATH=':memory:'`), así que no tocan la base real. La variable `IGNORAR_HORARIO=1` permite probar fuera del horario de atención, y `tests/helpers/sesionPersonal.js` inicia sesión con un usuario del personal para las rutas protegidas.
 
-Permiten validar funciones y componentes de manera aislada. Estas pruebas se enfocan en la logica del sistema, por ejemplo, el calculo del tiempo estimado de espera.
+Para ejecutarlas:
 
-Pruebas de Integracion (Supertest + Express)
+```bash
+npm test
+```
 
-Verifican que las rutas de la API, la logica de negocio y la base de datos funcionen correctamente en conjunto. Se utilizan para probar procesos como la creacion de turnos, la gestion de atencion y la generacion de reportes.
+## 2. Matriz de trazabilidad
 
-Pruebas de Rendimiento (Autocannon)
+La relación de cada requerimiento con su especificación, su código, su prueba y su resultado está en [`matriz-de-trazabilidad.md`](matriz-de-trazabilidad.md). Se mantiene en un solo lugar para que no haya dos versiones distintas.
 
-Permiten medir el comportamiento del sistema bajo carga, comprobando que el servidor sea capaz de atender multiples solicitudes simultaneas sin degradar su funcionamiento.
+## 3. Archivos de prueba
 
-2. Matriz de Trazabilidad
+| Archivo | Suites | Requerimientos |
+|---|---|---|
+| `tests/turno.test.js` | Servicios, crear turno, consultar turno, cancelar | RF-01, RF-03, NFR-03 |
+| `tests/fila.test.js` | `GET /api/turnos/fila` | RF-02 |
+| `tests/recepcion.test.js` | Llamar al siguiente, llamados y no asistió, fila de recepción, acceso | RF-04, RF-06, NFR-04 |
+| `tests/preferencial.test.js` | Cambiar la prioridad de un turno | RF-04 |
+| `tests/marcarAtendido.test.js` | Marcar atendido | RF-05 |
+| `tests/serviciosMostradores.test.js` | Servicios y mostradores vinculados | RF-07 |
+| `tests/admin.test.js` | Permisos, servicios, mostradores, horarios | RF-08, NFR-04 |
+| `tests/auth.test.js` | Login y roles | RF-08, NFR-04 |
+| `tests/reportes.test.js` | Reporte general | RF-09, NFR-06 |
+| `tests/Reportesfiltro.test.js` | Filtro de fechas y CSV | RF-09 |
+| `tests/estimacion.test.js` | Configuración, duración del servicio, espera del turno | RF-10 |
+| `tests/persistencia.test.js` | Persistencia entre reinicios, recuperación ante errores | NFR-05 |
+| `tests/qr.test.js` | Acceso por QR | GES-49 |
+| `tests/salud.test.js` | Esqueleto del proyecto | GES-48 |
 
-Esta matriz relaciona los requerimientos funcionales y no funcionales con las pruebas que validan su cumplimiento.
+## 4. Ejemplos de pruebas
 
-Requerimiento	Evaluacion	Herramienta	Archivo de prueba	EstadoRF-01: Tomar turno	El cliente obtiene un turno sin necesidad de crear una cuenta y recibe un codigo de identificacion.	Supertest	tests/turnos.test.js	Listo
-RF-02: Ver fila en vivo	La lista de espera puede consultarse en tiempo real.	Supertest	tests/turnos.test.js	Listo
-RF-03: Cancelar turno	Un turno puede eliminarse de la fila cuando el cliente lo cancela.	Supertest	tests/turnos.test.js	Listo
-RF-04: Llamar siguiente	El recepcionista puede llamar al siguiente turno pendiente.	Supertest	tests/atencion.test.js	Listo
-RF-05: Marcar atendido	El sistema registra la finalizacion de la atencion y su duracion.	Supertest	tests/atencion.test.js	Listo
-RF-06: No asistio	Un turno se marca como no asistido despues de tres llamados sin respuesta.	Supertest	tests/atencion.test.js	Listo
-RF-07: Servicios y mostradores	Los turnos son asignados correctamente al servicio o mostrador correspondiente.	Supertest	tests/servicios.test.js	Listo
-RF-08: Panel administrativo	Solo usuarios con rol de administrador pueden acceder al panel.	Supertest	tests/admin.test.js	Listo
-RF-09: Reportes	Se generan metricas como tiempo promedio de espera, saturacion y duracion de atencion.	Supertest	tests/reportes.test.js	Listo
-RF-10: Estimacion de espera	Se calcula correctamente el tiempo estimado de espera segun la cantidad de turnos en fila.	Jest	tests/estimacion.test.js	Listo
-NFR-01: Toma rapida	El proceso de obtencion de turno es sencillo y puede realizarse en menos de 30 segundos.	Pruebas manuales	Pruebas de usuario	Listo
-NFR-02: Rendimiento	El sistema soporta 100 usuarios concurrentes manteniendo tiempos de respuesta menores a 2 segundos.	Autocannon	tests/carga.js	Listo
-NFR-04: Login y roles	Las contrasenas estan protegidas mediante bcryptjs y las sesiones se gestionan correctamente.	Supertest	tests/auth.test.js	Listo
-NFR-05: Persistencia	La base de datos conserva la informacion ante errores o reinicios inesperados.	SQLite / Jest	tests/turnos.test.js	Listo
-NFR-06: Cobertura de pruebas	Todas las pruebas automatizadas se ejecutan correctamente sin errores.	Jest CLI	npm test	Listo
-Plan de Pruebas y Matriz de Trazabilidad (Version Final)
+### 4.1. Prueba unitaria: duración estimada de un servicio
 
-(GES-30, GES-31, GES-34)
+Sin historial suficiente, la estimación usa la duración configurada de cada servicio (5, 10 y 7 minutos en los datos de ejemplo).
 
-Estado: Aprobado (10/10 suites, 119/119 pruebas superadas)
-
-Matriz de Trazabilidad Final
-ID Requerimiento	Descripcion	Nivel	Archivo de Prueba	Estado	ResultadoRF-01	Tomar turno sin cuenta	Integracion	tests/turno.test.js	Aprobado	Codigo 201 y codigo generado
-RF-02	Consultar fila en vivo	Integracion	tests/fila.test.js	Aprobado	Retorna fila activa
-RF-03	Cancelar turno	Integracion	tests/turno.test.js	Aprobado	Estado cambia a cancelado
-RF-04	Llamar siguiente turno	Integracion	tests/recepcion.test.js	Aprobado	Pasa a en_atencion y ventanilla
-RF-05	Marcar atendido y duracion	Integracion	tests/marcarAtendido.test.js	Aprobado	Registra fin y duracion
-RF-06	No asistio tras llamados	Integracion	tests/recepcion.test.js	Aprobado	Marca no_asistio al 3er llamado
-RF-07	Servicios y mostradores	Integracion	tests/serviciosMostradores.test.js	Aprobado	Integridad referencial valida
-RF-08	Panel de administracion	Integracion	tests/auth.test.js	Aprobado	Bloqueo por rol
-RF-09	Reportes analiticos	Integracion	tests/reportes.test.js	Aprobado	SQL GROUP BY devuelve metricas
-RF-10	Estimacion de espera	Unitaria	tests/estimacion.test.js	Aprobado	Calculo algoritmico verificado
-NFR-02	Rendimiento (100 clientes)	Carga	autocannon (HTTP 200)	Aprobado	18.17 ms avg / p99: 35 ms
-NFR-04	Login y contrasenas	Seguridad	tests/auth.test.js	Aprobado	Hash seguro y sesiones activas
-NFR-05	Persistencia transaccional	Integracion	tests/persistencia.test.js	Aprobado	Integridad en SQLite
-NFR-06	Suite automatizada	CI / Test	npm test	Aprobado	119 pruebas pasando
-
-3. Ejemplos de Pruebas
-3.1 Prueba Unitaria: Calculo de Tiempo de Espera
-
-Esta prueba valida la formula utilizada para estimar el tiempo de espera de un cliente.
-
-Formula utilizada:
-
-Tiempo estimado = Turnos delante × Promedio por turno
-
+```js
 // tests/estimacion.test.js
+const { calcularDuracionServicio } = require('../src/server/estimacion');
 
-const { calcularEspera } = require('../src/services/estimacion');
-
-test('calcula el tiempo de espera multiplicando turnos por promedio', () => {
-  const minutos = calcularEspera(3, 5);
-
-  expect(minutos).toBe(15);
+test('usa la duración configurada cuando no hay historial', () => {
+  expect(calcularDuracionServicio(1)).toBe(300);
+  expect(calcularDuracionServicio(2)).toBe(600);
+  expect(calcularDuracionServicio(3)).toBe(420);
 });
+```
 
-3.2 Prueba de Integracion: Creacion de Turno
+### 4.2. Prueba de integración: creación de turno
 
-Esta prueba verifica que la API permita crear un turno correctamente y devuelva la informacion esperada.
+Verifica que la API cree el turno con su estado, su prioridad y el código con el prefijo del servicio.
 
-// tests/turnos.test.js
-
+```js
+// tests/turno.test.js
 const request = require('supertest');
-const app = require('../src/app');
+const app = require('../src/server/app');
 
-test('POST /api/turnos crea un nuevo turno correctamente', async () => {
-  const respuesta = await request(app)
-    .post('/api/turnos')
-    .send({ servicio_id: 1 });
-
-  expect(respuesta.statusCode).toBe(201);
-  expect(respuesta.body).toHaveProperty('id');
-  expect(respuesta.body.estado).toBe('en_espera');
+test('crea un turno en estado esperando con prioridad normal y código con prefijo', async () => {
+  const res = await request(app).post('/api/turnos').send({ tipo_servicio_id: 2 });
+  expect(res.status).toBe(201);
+  expect(res.body.estado).toBe('esperando');
+  expect(res.body.prioridad).toBe('normal');
+  expect(res.body.codigo).toBe('T-001');
 });
+```
 
-4. Criterio de Exito
+### 4.3. Prueba de integración: números únicos con solicitudes simultáneas
 
-El plan de pruebas se considerara completado satisfactoriamente cuando se cumplan las siguientes condiciones:
+```js
+// tests/turno.test.js
+test('solicitudes simultáneas reciben números distintos', async () => {
+  const respuestas = await Promise.all(
+    Array.from({ length: 20 }, () => request(app).post('/api/turnos').send({ tipo_servicio_id: 3 }))
+  );
+  const numeros = respuestas.map((r) => r.body.numero).sort((x, y) => x - y);
+  expect(numeros).toEqual(Array.from({ length: 20 }, (_, i) => i + 1));
+});
+```
 
-Todas las pruebas automatizadas se ejecutan correctamente mediante npm test sin presentar errores.
-Las pruebas de rendimiento realizadas con Autocannon demuestran que el sistema puede atender al menos 100 usuarios concurrentes manteniendo tiempos de respuesta inferiores a 2 segundos.
-Los requerimientos funcionales y no funcionales definidos en la matriz de trazabilidad se encuentran validados y marcados como completados.
+## 5. Resultados
+
+| Fecha | Resultado |
+|---|---|
+| 22 de octubre de 2026 | 10 suites y 119 pruebas aprobadas. |
+| 24 de octubre de 2026 | 14 suites y 175 pruebas aprobadas, 0 fallidas. |
+
+## 6. Criterio de éxito
+
+El plan de pruebas se considera completado cuando:
+
+- Todas las pruebas automatizadas se ejecutan con `npm test` sin errores. **Cumplido.**
+- Cada requerimiento de la matriz tiene al menos una prueba o una verificación manual documentada. **Cumplido**, salvo lo indicado abajo.
+- Las pruebas de rendimiento demuestran que el sistema atiende al menos 100 usuarios simultáneos con respuestas de menos de 2 segundos. **Pendiente de respaldar:** el resultado se reportó, pero el script y su salida no están en el repositorio.
+
+## 7. Limitaciones conocidas
+
+- Las pruebas automatizadas cubren la API, no las pantallas. Los errores de la interfaz se detectan con pruebas manuales en el navegador.
+- La compatibilidad con Firefox y Edge (NFR-07) sigue pendiente.
+- Las rutas de reportes todavía no exigen sesión de administrador; cuando se protejan habrá que ajustar `tests/reportes.test.js` y `tests/Reportesfiltro.test.js`.
