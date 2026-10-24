@@ -8,6 +8,7 @@ const turnos = require('./routes/turnos');
 const recepcion = require('./routes/recepcion');
 const admin = require('./routes/admin');
 const reportes = require('./routes/reportes');
+const qr = require('./routes/qr');
   crearUsuariosIniciales();
 const app = express();
 
@@ -24,6 +25,7 @@ app.use('/api/turnos', turnos);
 app.use('/api/recepcion', recepcion);
 app.use('/api/admin', admin);
 app.use('/api/reportes', reportes);
+app.use('/api/qr', qr);
 
 app.use('/api', (req, res) => {
   res.status(404).json({ error: 'Ruta no encontrada' });

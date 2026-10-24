@@ -9,22 +9,25 @@ if (!isMainThread) {
   const db = require('../../src/server/db');
 
   const barrera = new Int32Array(workerData.barrera);
-  parentPort.postMessage({ tipo: 'listo' });
-  Atomics.wait(barrera, 0, 0);
+  const agente = request.agent(app);
 
-  const { metodo, url, cuerpo } = workerData.solicitud;
-  request(app)
-    [metodo](url)
-    .send(cuerpo)
+  agente
+    .post('/api/admin/login')
+    .send({ usuario: 'admin', contrasena: 'admin123' })
+    .then(() => {
+      parentPort.postMessage({ tipo: 'listo' });
+      Atomics.wait(barrera, 0, 0);
+
+      const { metodo, url, cuerpo } = workerData.solicitud;
+      return agente[metodo](url).send(cuerpo);
+    })
     .then((res) => {
       db.close();
       parentPort.postMessage({ tipo: 'resultado', status: res.status, cuerpo: res.body });
     });
 }
 
-// Cada worker abre su propia conexión a SQLite; con Promise.all sobre la conexión síncrona
-// de better-sqlite3 las escrituras nunca coincidirían. Mientras otra conexión retiene el
-// bloqueo de escritura, todas las solicitudes quedan esperando a la vez y compiten al liberarse.
+
 async function solicitudesSimultaneas(rutaDb, solicitudes) {
   const Database = require('better-sqlite3');
   const barrera = new SharedArrayBuffer(4);

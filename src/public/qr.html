@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Código QR - Gestión de Turnos</title>
+  <link rel="stylesheet" href="/css/estilos.css">
+  <style>
+    #imagen-qr { width: min(20rem, 100%); height: auto; display: block; margin: 0 auto 1rem; background: #fff; }
+    .zona-qr { text-align: center; }
+    .zona-qr .direccion { word-break: break-all; font-weight: 600; }
+    .botones { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .5rem; }
+    @media print {
+      header, .banda-titulo, footer, .no-imprimir { display: none !important; }
+      body, .banda, .banda-gris { background: #fff !important; }
+      .tarjeta { border: 0 !important; box-shadow: none !important; }
+    }
+  </style>
+</head>
+<body class="bandas">
+  <header class="barra">
+    <div class="contenedor barra-interna">
+      <a class="logo" href="/admin.html"><span class="logo-marca" aria-hidden="true"></span>Gestión de Turnos</a>
+      <a class="boton boton-ghost" href="/admin.html">Administración</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="banda-titulo">
+      <div class="contenedor">
+        <h1>Código QR para tomar turno</h1>
+        <p class="hero-texto">El cliente escanea el código y entra directo a tomar su turno.</p>
+      </div>
+    </section>
+
+    <section class="banda banda-gris">
+      <div class="contenedor">
+        <p id="mensaje" class="aviso" role="status" aria-live="polite" hidden></p>
+
+        <div id="contenido" class="tarjeta" hidden>
+          <div class="campo no-imprimir">
+            <label for="direccion">Dirección que abrirá el QR</label>
+            <select id="direccion"></select>
+          </div>
+
+          <div class="zona-qr">
+            <img id="imagen-qr" alt="Código QR para tomar turno">
+            <p id="texto-direccion" class="direccion"></p>
+            <p><strong>Escanea para tomar tu turno</strong></p>
+          </div>
+
+          <div class="botones no-imprimir">
+            <button id="imprimir" class="boton boton-principal boton-compacto" type="button">Imprimir o guardar como PDF</button>
+          </div>
+
+          <div class="no-imprimir" style="margin-top: 1.5rem">
+            <h2>Para que funcione</h2>
+            <ul>
+              <li>El celular y esta computadora deben estar en la <strong>misma red WiFi</strong> (o la computadora conectada al hotspot del celular).</li>
+              <li>Elige la dirección de tu WiFi, normalmente la que dice <em>Wi-Fi</em>. Las de adaptadores virtuales no sirven para el celular.</li>
+              <li>La primera vez, Windows pregunta si permites a Node en el firewall: acepta en <strong>redes privadas</strong>.</li>
+              <li>Si cambia la red o la IP de la computadora, el QR cambia: vuelve a abrir esta página.</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <div class="contenedor">
+      <p>Proyecto final de Análisis de Sistemas II</p>
+    </div>
+  </footer>
+
+  <script src="/js/qr.js"></script>
+</body>
+</html>

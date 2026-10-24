@@ -19,7 +19,8 @@
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
     "express": "^4.22.3",
-    "express-session": "^1.19.0"
+    "express-session": "^1.19.0",
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "jest": "^30.5.2",

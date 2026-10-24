@@ -25,7 +25,8 @@ const SQL_ESPERANDO_POR_SERVICIO = `
 
 const SQL_MI_TURNO = `
   SELECT t.*, s.nombre AS servicio_nombre, s.prefijo AS servicio_prefijo,
-         m.nombre AS mostrador_nombre
+         m.nombre AS mostrador_nombre,
+         (SELECT COUNT(*) FROM llamados l WHERE l.turno_id = t.id) AS llamados
     FROM turnos t
     JOIN tipos_servicio s ON s.id = t.tipo_servicio_id
     LEFT JOIN mostradores m ON m.id = t.mostrador_id
@@ -60,7 +61,7 @@ function miTurno(id, hoy) {
       .prepare(SQL_DELANTE)
       .all({ hoy, id: t.id, rango, numero: t.numero, servicio: t.tipo_servicio_id });
     delante = anteriores.length;
-    // Estimación de GES-28 (RF-1): simula mostradores y respeta la prioridad.
+
     espera = calcularEsperaEstimada(t.id);
   }
 
@@ -71,6 +72,7 @@ function miTurno(id, hoy) {
     prioridad: t.prioridad,
     servicio: { id: t.tipo_servicio_id, nombre: t.servicio_nombre, prefijo: t.servicio_prefijo },
     mostrador: t.mostrador_nombre || null,
+    llamados: t.llamados,
     delante,
     espera_estimada_seg: espera,
   };
