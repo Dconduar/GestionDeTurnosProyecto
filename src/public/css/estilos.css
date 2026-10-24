@@ -32,7 +32,7 @@ body {
   background: var(--fondo);
 }
 
-/* Contenedor sencillo (pantallas sin bandas) */
+
 header, main { max-width: 60rem; margin: 0 auto; padding: 1rem; }
 
 h1, h2, h3 { margin: 0 0 .75rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; }
@@ -53,14 +53,14 @@ a { color: var(--morado); font-weight: 600; }
   overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
 }
 
-/*Pantallas con bandas*/
+
 
 body.bandas main,
 body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 
 .contenedor { max-width: 68rem; margin: 0 auto; padding: 0 1rem; }
 
-/* Barra superior */
+
 .barra { background: var(--blanco); border-bottom: var(--borde); }
 .barra-interna { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4rem; }
 .logo { display: inline-flex; align-items: center; gap: .6rem; font-weight: 700; color: var(--tinta); text-decoration: none; letter-spacing: -0.02em; }
@@ -69,7 +69,7 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 .enlace-barra { display: none; padding: .5rem .75rem; color: var(--texto-suave); font-weight: 500; text-decoration: none; }
 .enlace-barra:hover { color: var(--tinta); }
 
-/* Bandas */
+
 .banda { padding: 3.5rem 0; }
 .banda-titulo { padding: 2.5rem 0; background: var(--blanco); border-bottom: var(--borde); }
 .banda-titulo h1 { font-size: clamp(2rem, 6vw, 3rem); margin-bottom: .5rem; }
@@ -81,13 +81,13 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 
 .hero-texto { margin: 0 0 1.5rem; font-size: 1.25rem; color: var(--texto-suave); max-width: 34rem; }
 
-/* Pie de página */
+
 .pie { padding: 1.5rem 0; background: var(--blanco); border-top: var(--borde); color: var(--texto-suave); font-size: 1rem; }
 .pie p { margin: 0; }
 .pie-interno { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .75rem 1.5rem; }
 .pie a { color: var(--texto-suave); font-weight: 500; }
 
-/*Botones*/
+
 
 .boton {
   display: inline-block;
@@ -113,7 +113,7 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 .boton-oscuro { background: var(--tinta); color: var(--blanco); border-color: var(--tinta); }
 .boton-oscuro:hover { background: #3f3f46; color: var(--blanco); }
 
-/* Único botón de acción principal */
+
 .boton-principal {
   width: 100%;
   min-height: 3.5rem;
@@ -136,7 +136,7 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 .boton:disabled:hover { background: var(--gris); }
 .boton:disabled:active { transform: none; }
 
-/*Tarjetas*/
+
 
 .rejilla { display: grid; gap: 1rem; }
 
@@ -157,12 +157,12 @@ body.bandas header.barra { max-width: none; margin: 0; padding: 0; }
 .tarjeta h3 { margin-bottom: .35rem; }
 .tarjeta .texto-suave { font-size: 1rem; }
 
-/* Tarjeta que es un enlace (menú de pantallas) */
+
 a.tarjeta { text-decoration: none; font-weight: 400; }
 a.tarjeta:hover { border-color: var(--morado); }
 a.tarjeta h2, a.tarjeta h3 { color: var(--tinta); }
 
-/* Icono dentro de una tarjeta */
+
 .icono {
   display: inline-flex; align-items: center; justify-content: center;
   width: 2.75rem; height: 2.75rem; margin-bottom: 1rem;
@@ -171,9 +171,9 @@ a.tarjeta h2, a.tarjeta h3 { color: var(--tinta); }
 }
 .icono svg { width: 1.375rem; height: 1.375rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-/*Avisos*/
 
-/* Aviso de error: oscuro con texto blanco */
+
+
 .aviso {
   margin: 0 0 1.5rem;
   padding: 1.1rem 1.4rem;
@@ -182,10 +182,10 @@ a.tarjeta h2, a.tarjeta h3 { color: var(--tinta); }
   border-radius: var(--radio-tarjeta);
   font-weight: 600;
 }
-/* Aviso informativo: morado suave */
+
 .aviso.info { color: var(--morado-oscuro); background: var(--morado-suave); border: 1px solid var(--morado-borde); }
 
-/*Etiquetas*/
+
 
 .etiqueta {
   display: inline-block;
@@ -202,7 +202,7 @@ a.tarjeta h2, a.tarjeta h3 { color: var(--tinta); }
 .etiqueta-solida { color: var(--blanco); background: var(--morado); border-color: var(--morado); }
 .etiqueta-oscura { color: var(--blanco); background: var(--tinta); border-color: var(--tinta); }
 
-/*Formularios*/
+
 
 .campo { display: grid; gap: .375rem; margin-bottom: 1rem; }
 label { font-weight: 600; }
@@ -218,8 +218,9 @@ input, select, textarea {
 }
 input::placeholder, textarea::placeholder { color: #71717a; }
 input:focus-visible, select:focus-visible, textarea:focus-visible { border-color: var(--morado); outline: 3px solid var(--morado-borde); outline-offset: 0; }
+select:disabled { color: #71717a; background: var(--gris); border-color: var(--linea); cursor: not-allowed; }
 
-/*Tablas*/
+
 
 .tabla-contenedor { overflow-x: auto; background: var(--blanco); border: var(--borde); border-radius: 16px; }
 .tabla { width: 100%; border-collapse: collapse; font-size: 1rem; }
@@ -229,7 +230,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 
 .texto-suave { color: var(--texto-suave); }
 
-/*Página de inicio*/
+
 
 .inicio-hero {
   padding: 5rem 0 4.5rem;
@@ -243,7 +244,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 .acciones { display: flex; flex-wrap: wrap; justify-content: center; gap: .75rem; align-items: center; }
 .nota { margin: 1rem 0 0; font-size: 1rem; color: var(--texto-suave); }
 
-/* Tecnologías */
+
 .logos { display: flex; flex-wrap: wrap; gap: .75rem; margin: 0; padding: 0; list-style: none; }
 .logos li { padding: .6rem 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: var(--texto-suave); background: var(--blanco); border: var(--borde); border-radius: var(--radio-pildora); }
 
@@ -253,7 +254,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
 .cta { display: grid; gap: 1.5rem; align-items: center; }
 .cta p { margin: 0; font-size: 1.25rem; opacity: .95; }
 
-/*Pantallas grandes */
+
 @media (min-width: 48rem) {
   .enlace-barra { display: inline-block; }
   .rejilla-2 { grid-template-columns: repeat(2, 1fr); }
@@ -269,7 +270,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible { border-color
   * { scroll-behavior: auto !important; }
 }
 
-/*Pantallas pequeñas*/
+
 @media (max-width: 47.99rem) {
   .banda { padding: 2rem 0; }
   .banda-titulo { padding: 1.75rem 0; }

@@ -8,6 +8,11 @@ process.env.DB_PATH = RUTA_DB;
 const Database = require('better-sqlite3');
 const request = require('supertest');
 const app = require('../src/server/app');
+const { iniciarSesion } = require('./helpers/sesionPersonal');
+let personal;
+beforeAll(async () => {
+  personal = await iniciarSesion(app);
+});
 const db = require('../src/server/db');
 const solicitudesSimultaneas = require('./helpers/solicitudesSimultaneas');
 
@@ -22,11 +27,11 @@ function crearTurno(servicioId) {
 }
 
 function llamarSiguiente(mostradorId = 1) {
-  return request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: mostradorId });
+  return personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: mostradorId });
 }
 
 function atender(id, mostradorId = 1) {
-  return request(app).patch(`/api/recepcion/turnos/${id}/atendido`).send({ mostrador_id: mostradorId });
+  return personal.patch(`/api/recepcion/turnos/${id}/atendido`).send({ mostrador_id: mostradorId });
 }
 
 async function turnoEnAtencion(mostradorId = 1) {
@@ -128,9 +133,9 @@ describe('PATCH /api/recepcion/turnos/:id/atendido (RF-05)', () => {
 
   test('no finaliza un turno marcado como no asistió', async () => {
     const id = await turnoEnAtencion();
-    await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
-    await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
-    const ausencia = await request(app).patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
+    await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    const ausencia = await personal.patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
     expect(ausencia.body.estado).toBe('no_asistio');
 
     const res = await atender(id);
@@ -148,7 +153,7 @@ describe('PATCH /api/recepcion/turnos/:id/atendido (RF-05)', () => {
     const id = await turnoEnAtencion();
     const antes = leerTurno(id);
     for (const ruta of ['abc', '-1', '1.5']) {
-      const res = await request(app).patch(`/api/recepcion/turnos/${ruta}/atendido`).send({ mostrador_id: 1 });
+      const res = await personal.patch(`/api/recepcion/turnos/${ruta}/atendido`).send({ mostrador_id: 1 });
       expect(res.status).toBe(404);
       expect(res.body.error).toBeDefined();
     }
@@ -214,7 +219,7 @@ describe('PATCH /api/recepcion/turnos/:id/atendido (RF-05)', () => {
     expect((await llamarSiguiente()).body.codigo).toBe('YA_HAY_TURNO_EN_ATENCION');
 
     await atender(actual);
-    const fila = await request(app).get('/api/recepcion/fila?mostrador_id=1');
+    const fila = await personal.get('/api/recepcion/fila?mostrador_id=1');
     expect(fila.body.en_atencion).toBeNull();
     expect(fila.body.puede_llamar).toBe(true);
 
@@ -246,7 +251,7 @@ describe('PATCH /api/recepcion/turnos/:id/atendido (RF-05)', () => {
     const segundo = crearTurno(1);
 
     expect((await llamarSiguiente()).body.id).toBe(primero);
-    const rellamado = await request(app).post(`/api/recepcion/turnos/${primero}/llamar`).send({ mostrador_id: 1 });
+    const rellamado = await personal.post(`/api/recepcion/turnos/${primero}/llamar`).send({ mostrador_id: 1 });
     expect(rellamado.body.llamados).toBe(2);
     expect((await atender(primero)).body.estado).toBe('atendido');
 

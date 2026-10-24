@@ -2,6 +2,11 @@ process.env.DB_PATH = ':memory:';
 
 const request = require('supertest');
 const app = require('../src/server/app');
+const { iniciarSesion } = require('./helpers/sesionPersonal');
+let personal;
+beforeAll(async () => {
+  personal = await iniciarSesion(app);
+});
 const db = require('../src/server/db');
 
 beforeEach(() => {
@@ -282,7 +287,7 @@ describe('Cancelar turno y actualizar la fila', () => {
 
     expect(cancelacion.status).toBe(200);
 
-    const respuesta = await request(app)
+    const respuesta = await personal
       .get('/api/recepcion/fila')
       .query({ mostrador_id: 1 });
 

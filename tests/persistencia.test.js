@@ -11,6 +11,11 @@ process.env.DB_PATH = RUTA_DB;
 const Database = require('better-sqlite3');
 const request = require('supertest');
 const app = require('../src/server/app');
+const { iniciarSesion } = require('./helpers/sesionPersonal');
+let personal;
+beforeAll(async () => {
+  personal = await iniciarSesion(app);
+});
 const db = require('../src/server/db');
 const solicitudesSimultaneas = require('./helpers/solicitudesSimultaneas');
 
@@ -55,11 +60,12 @@ describe('NFR-05 persistencia entre reinicios del servidor', () => {
       proceso.stdout.on('data', (datos) => String(datos).includes('Servidor listo') && resolve());
       proceso.once('exit', (codigo) => reject(new Error(`El servidor terminó al iniciar (código ${codigo})`)));
     });
-    return { proceso, api: request(`http://127.0.0.1:${puerto}`) };
+    const api = request.agent(`http://127.0.0.1:${puerto}`);
+    await api.post('/api/admin/login').send({ usuario: 'admin', contrasena: 'admin123' });
+    return { proceso, api };
   }
 
-  // kill() termina el proceso de golpe, sin cierre ordenado: la base debe conservar
-  // lo confirmado igual que ante una caída real.
+
   function detenerServidor({ proceso }) {
     return new Promise((resolve) => {
       proceso.once('exit', resolve);
@@ -150,11 +156,11 @@ describe('NFR-05 recuperación ante errores', () => {
   }
 
   function llamar(mostradorId) {
-    return request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: mostradorId });
+    return personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: mostradorId });
   }
 
   function atender(id, mostradorId = 1) {
-    return request(app).patch(`/api/recepcion/turnos/${id}/atendido`).send({ mostrador_id: mostradorId });
+    return personal.patch(`/api/recepcion/turnos/${id}/atendido`).send({ mostrador_id: mostradorId });
   }
 
   function estadoCompleto() {
@@ -164,8 +170,7 @@ describe('NFR-05 recuperación ante errores', () => {
     };
   }
 
-  // Trigger temporal: solo existe en la conexión de esta prueba y aborta la sentencia
-  // después de que la operación ya escribió dentro de su transacción.
+
   function fallarDespuesDe(evento, tabla, condicion = '') {
     db.exec(
       `CREATE TEMP TRIGGER fallo_simulado AFTER ${evento} ON ${tabla} ${condicion}
@@ -247,13 +252,13 @@ describe('NFR-05 recuperación ante errores', () => {
     const atendido = (await llamar(1)).body.id;
     await atender(atendido);
     await llamar(1);
-    const filaAntes = (await request(app).get('/api/recepcion/fila?mostrador_id=2')).body;
+    const filaAntes = (await personal.get('/api/recepcion/fila?mostrador_id=2')).body;
     const antes = estadoCompleto();
 
     fallarDespuesDe('INSERT', 'llamados');
     expectErrorInterno(await llamar(2));
 
-    const filaDespues = (await request(app).get('/api/recepcion/fila?mostrador_id=2')).body;
+    const filaDespues = (await personal.get('/api/recepcion/fila?mostrador_id=2')).body;
     expect(estadoCompleto()).toEqual(antes);
     expect(filaDespues.fila.map((t) => t.id)).toEqual(filaAntes.fila.map((t) => t.id));
     expect(filaDespues.otros_mostradores.map((t) => t.id)).toEqual(filaAntes.otros_mostradores.map((t) => t.id));

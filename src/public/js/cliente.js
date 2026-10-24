@@ -32,6 +32,7 @@
     filaAviso: document.getElementById('fila-aviso'),
     btnCancelar: document.getElementById('btn-cancelar'),
     btnNuevo: document.getElementById('btn-nuevo'),
+    btnProbar: document.getElementById('btn-probar'),
   };
 
   var INTERVALO_FILA_MS = 2000;
@@ -39,6 +40,184 @@
   var consultandoFila = false;
   var estadoMostrado = null;
   var mostradorMostrado = null;
+  var llamadosVistos = null;
+
+  var TITULO_ORIGINAL = document.title;
+  var audioCtx = null;
+  var parpadeo = null;
+
+  var elAudio = null;         
+  var audioDesbloqueado = false;
+  var osciladores = [];
+
+
+  var UNIDAD = [[1900, 0.2], [0, 0.08], [1400, 0.2], [0, 0.08], [1900, 0.2], [0, 0.08], [1400, 0.2], [0, 0.8]];
+  var REPETICIONES = 4;
+  var TASA = 22050;
+
+  function onda(frecuencia, i) {
+    var x = Math.sin(2 * Math.PI * frecuencia * i / TASA) * 1.8;
+    return Math.max(-1, Math.min(1, x));
+  }
+
+  function crearWav() {
+    var total = 0;
+    UNIDAD.forEach(function (p) { total += Math.floor(p[1] * TASA); });
+    total *= REPETICIONES;
+
+    var buffer = new ArrayBuffer(44 + total * 2);
+    var v = new DataView(buffer);
+    function texto(pos, t) { for (var i = 0; i < t.length; i++) v.setUint8(pos + i, t.charCodeAt(i)); }
+    texto(0, 'RIFF'); v.setUint32(4, 36 + total * 2, true); texto(8, 'WAVE');
+    texto(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 1, true);
+    v.setUint32(24, TASA, true); v.setUint32(28, TASA * 2, true); v.setUint16(32, 2, true); v.setUint16(34, 16, true);
+    texto(36, 'data'); v.setUint32(40, total * 2, true);
+
+    var pos = 44;
+    for (var r = 0; r < REPETICIONES; r++) {
+      UNIDAD.forEach(function (p) {
+        var n = Math.floor(p[1] * TASA);
+        for (var i = 0; i < n; i++) {
+          var envolvente = Math.min(1, i / 110, (n - i) / 110);
+          var muestra = p[0] ? onda(p[0], i) * 0.97 * envolvente : 0;
+          v.setInt16(pos, muestra * 32767, true);
+          pos += 2;
+        }
+      });
+    }
+    return URL.createObjectURL(new Blob([buffer], { type: 'audio/wav' }));
+  }
+
+  function desbloquearAudio() {
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {
+        if (!audioCtx) audioCtx = new Ctx();
+        if (audioCtx.state !== 'running') audioCtx.resume();
+      }
+    } catch (e) {
+    }
+
+    try {
+      if (!elAudio) {
+        elAudio = new Audio(crearWav());
+        elAudio.preload = 'auto';
+        elAudio.volume = 1;
+      }
+      if (!audioDesbloqueado) {
+        elAudio.muted = true;
+        var intento = elAudio.play();
+        var listo = function () {
+          elAudio.pause();
+          elAudio.currentTime = 0;
+          elAudio.muted = false;
+          audioDesbloqueado = true;
+        };
+        if (intento && intento.then) intento.then(listo).catch(function () { elAudio.muted = false; });
+        else listo();
+      }
+    } catch (e) {
+      elAudio = null;
+    }
+  }
+
+  function sonarWebAudio() {
+    try {
+      if (!audioCtx) return;
+      audioCtx.resume().then(function () {
+        var t = audioCtx.currentTime;
+        for (var r = 0; r < REPETICIONES; r++) {
+          UNIDAD.forEach(function (p) {
+            if (p[0]) pitido(t, p[0], p[1]);
+            t += p[1];
+          });
+        }
+      }).catch(function () {});
+    } catch (e) {
+    }
+  }
+
+  function sonar() {
+    if (!elAudio) return sonarWebAudio();
+    try {
+      elAudio.muted = false;
+      elAudio.currentTime = 0;
+      var intento = elAudio.play();
+      if (intento && intento.catch) intento.catch(sonarWebAudio);
+    } catch (e) {
+      sonarWebAudio();
+    }
+  }
+
+  function detenerSonido() {
+    try {
+      if (elAudio) { elAudio.pause(); elAudio.currentTime = 0; }
+    } catch (e) { /* nada */ }
+    osciladores.forEach(function (o) { try { o.stop(); } catch (e) { /* ya detenido */ } });
+    osciladores = [];
+  }
+
+  function pitido(inicio, frecuencia, duracion) {
+    var osc = audioCtx.createOscillator();
+    var vol = audioCtx.createGain();
+    osc.type = 'square';
+    osc.frequency.value = frecuencia;
+    vol.gain.setValueAtTime(0.0001, inicio);
+    vol.gain.exponentialRampToValueAtTime(0.9, inicio + 0.01);
+    vol.gain.setValueAtTime(0.9, inicio + duracion - 0.01);
+    vol.gain.exponentialRampToValueAtTime(0.0001, inicio + duracion);
+    osc.connect(vol);
+    vol.connect(audioCtx.destination);
+    osc.start(inicio);
+    osc.stop(inicio + duracion + 0.05);
+    osciladores.push(osc);
+  }
+
+  function alToque(e) {
+    if (e && e.target && e.target.closest && e.target.closest('#btn-probar')) return;
+    desbloquearAudio();
+    if (parpadeo !== null) detenerAviso();
+  }
+  document.addEventListener('click', alToque);
+  document.addEventListener('touchend', alToque);
+
+  function avisarLlamado() {
+    sonar();
+
+    try {
+      if (navigator.vibrate) {
+        var patron = [];
+        for (var i = 0; i < REPETICIONES; i++) patron.push(400, 200, 400, 200, 400, 800);
+        navigator.vibrate(patron);
+      }
+    } catch (e) {
+      /* sin vibración */
+    }
+
+    if (parpadeo === null) {
+      var alterno = false;
+      parpadeo = setInterval(function () {
+        alterno = !alterno;
+        document.title = alterno ? '¡ES TU TURNO!' : TITULO_ORIGINAL;
+      }, 800);
+    }
+  }
+
+  function detenerAviso() {
+    detenerSonido();
+    try { if (navigator.vibrate) navigator.vibrate(0); } catch (e) { /* nada */ }
+    if (parpadeo !== null) {
+      clearInterval(parpadeo);
+      parpadeo = null;
+    }
+    document.title = TITULO_ORIGINAL;
+  }
+
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) return;
+    var guardado = leerTurnoGuardado();
+    if (guardado && guardado.id && temporizadorFila !== null) consultarFila(guardado.id);
+  });
 
   var servicioElegido = null;
   var enviando = false;
@@ -65,6 +244,7 @@
   }
 
   function olvidarTurno() {
+    llamadosVistos = null;
     try {
       localStorage.removeItem(CLAVE);
     } catch (e) {
@@ -198,6 +378,7 @@
   }
 
   function tomarTurno() {
+    desbloquearAudio();
     if (enviando || servicioElegido === null) return;
 
     enviando = true;
@@ -243,6 +424,8 @@
   function dibujarTurno(turno) {
     var final = ESTADOS_FINALES.indexOf(turno.estado) !== -1;
     estadoMostrado = turno.estado;
+
+    if (turno.estado !== 'en_atencion') detenerAviso();
     mostradorMostrado = turno.mostrador || null;
     var guardado = leerTurnoGuardado();
 
@@ -262,7 +445,7 @@
       el.estado.textContent = 'Pase al ' + turno.mostrador;
     }
 
-    // Mostrar la espera estimada mientras el turno está pendiente.
+    
     const esperaValida =
       Number.isFinite(turno.espera_estimada_seg) &&
       turno.espera_estimada_seg >= 0;
@@ -286,11 +469,12 @@
       el.nota.textContent = '';
     } else {
       el.nota.textContent =
-        'Guarda este número. Si recargas la página, aquí seguirá tu turno.';
+        turno.estado === 'esperando'
+          ? 'Mantén esta pantalla abierta para enterarte cuando te llamen. Guarda este número: si recargas la página, aquí seguirá tu turno.'
+          : 'Guarda este número. Si recargas la página, aquí seguirá tu turno.';
     }
 
-    // Solo mostrar cancelar cuando existe un token
-    // y el turno está esperando
+
     el.btnCancelar.hidden = !(
       turno.estado === 'esperando' &&
       guardado &&
@@ -300,6 +484,7 @@
 
     el.btnCancelar.disabled = cancelando;
     el.btnNuevo.hidden = !final;
+    el.btnProbar.hidden = final;
 
     limpiarAviso();
     mostrarVista('turno');
@@ -312,7 +497,7 @@
     }
   }
 
-  // ---- Estado de la fila en tiempo real (RF-02) ----
+
 
   function textoEspera(segundos) {
     if (!Number.isFinite(segundos) || segundos < 0) {
@@ -372,8 +557,14 @@
 
         dibujarFila(fila);
 
-        // Solo se redibuja la tarjeta si cambió el estado o el mostrador,
-        // para no borrar avisos que el cliente aún esté leyendo.
+        if (Number.isFinite(mio.llamados)) {
+          if (llamadosVistos !== null && mio.llamados > llamadosVistos && mio.estado === 'en_atencion') {
+            avisarLlamado();
+          }
+          llamadosVistos = mio.llamados;
+        }
+
+
         if (mio.estado === estadoMostrado && mio.mostrador === mostradorMostrado) return;
 
         return pedirJson('/api/turnos/' + encodeURIComponent(turnoId), { cache: 'no-store' })
@@ -409,7 +600,7 @@
     }
   }
 
-  // Cancelar el turno del cliente
+  
   function cancelarTurno() {
     if (cancelando) return;
 
@@ -506,6 +697,13 @@
         }
       });
   }
+
+  el.btnProbar.addEventListener('click', function () {
+    desbloquearAudio();
+    audioDesbloqueado = true;
+    sonar();
+    try { if (navigator.vibrate) navigator.vibrate(200); } catch (e) { /* sin vibración */ }
+  });
 
   el.btnTomar.addEventListener('click', tomarTurno);
   el.btnCancelar.addEventListener('click', cancelarTurno);

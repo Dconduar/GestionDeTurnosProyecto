@@ -1,8 +1,11 @@
 const express = require('express');
 const db = require('../db');
 const { atencionAbierta, horarioPublico } = require('../horario');
+const { requiereRol } = require('../auth');
 
 const router = express.Router();
+
+router.use(requiereRol('recepcionista', 'administrador'));
 
 const MOSTRADOR_POR_DEFECTO = 1;
 const MAX_LLAMADOS_POR_DEFECTO = 3;
@@ -58,6 +61,12 @@ function leerMostrador(valor) {
   const id = valor === undefined || valor === null || valor === '' ? MOSTRADOR_POR_DEFECTO : Number(valor);
   if (!Number.isInteger(id) || id <= 0) return null;
   return db.prepare('SELECT id, nombre FROM mostradores WHERE id = ? AND activo = 1').get(id) || null;
+}
+
+function mostradorSolicitado(req, valor) {
+  const usuario = req.session && req.session.usuario;
+  if (usuario && usuario.rol === 'recepcionista' && usuario.mostrador_id) return usuario.mostrador_id;
+  return valor;
 }
 
 function mostradorOError(valor, res) {
@@ -184,7 +193,7 @@ function responderError(res, codigo) {
 }
 
 router.get('/fila', (req, res) => {
-  const mostrador = mostradorOError(req.query.mostrador_id, res);
+  const mostrador = mostradorOError(mostradorSolicitado(req, req.query.mostrador_id), res);
   if (!mostrador) return;
   const maximo = maxLlamados();
 
@@ -230,7 +239,7 @@ router.get('/fila', (req, res) => {
 });
 
 router.post('/llamar-siguiente', (req, res) => {
-  const mostrador = mostradorOError(req.body && req.body.mostrador_id, res);
+  const mostrador = mostradorOError(mostradorSolicitado(req, req.body && req.body.mostrador_id), res);
   if (!mostrador) return;
   if (!atencionAbierta()) return cerradoError(res);
 
@@ -240,7 +249,7 @@ router.post('/llamar-siguiente', (req, res) => {
 });
 
 router.post('/turnos/:id(\\d+)/llamar', (req, res) => {
-  const mostrador = mostradorOError(req.body && req.body.mostrador_id, res);
+  const mostrador = mostradorOError(mostradorSolicitado(req, req.body && req.body.mostrador_id), res);
   if (!mostrador) return;
   if (!atencionAbierta()) return cerradoError(res);
 
@@ -250,7 +259,7 @@ router.post('/turnos/:id(\\d+)/llamar', (req, res) => {
 });
 
 router.patch('/turnos/:id(\\d+)/no-asistio', (req, res) => {
-  const mostrador = mostradorOError(req.body && req.body.mostrador_id, res);
+  const mostrador = mostradorOError(mostradorSolicitado(req, req.body && req.body.mostrador_id), res);
   if (!mostrador) return;
 
   const resultado = marcarNoAsistio.immediate(Number(req.params.id), mostrador.id);
@@ -259,7 +268,7 @@ router.patch('/turnos/:id(\\d+)/no-asistio', (req, res) => {
 });
 
 router.patch('/turnos/:id(\\d+)/atendido', (req, res) => {
-  const mostrador = mostradorOError(req.body && req.body.mostrador_id, res);
+  const mostrador = mostradorOError(mostradorSolicitado(req, req.body && req.body.mostrador_id), res);
   if (!mostrador) return;
 
   const resultado = marcarAtendido.immediate(Number(req.params.id), mostrador.id);

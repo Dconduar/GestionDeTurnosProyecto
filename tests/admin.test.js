@@ -123,7 +123,7 @@ describe('Mostradores', () => {
   test('un mostrador desactivado deja de aparecer en el panel del recepcionista', async () => {
     const creado = await admin.post('/api/admin/mostradores').send({ nombre: 'Se apaga', servicios: [1] });
     await admin.patch(`/api/admin/mostradores/${creado.body.id}`).send({ activo: false });
-    const fila = await request(app).get('/api/recepcion/fila?mostrador_id=1');
+    const fila = await admin.get('/api/recepcion/fila?mostrador_id=1');
     expect(fila.status).toBe(200);
     expect(fila.body.mostradores.map((m) => m.id)).not.toContain(creado.body.id);
   });

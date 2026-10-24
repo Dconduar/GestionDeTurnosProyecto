@@ -2,6 +2,11 @@ process.env.DB_PATH = ':memory:';
 
 const request = require('supertest');
 const app = require('../src/server/app');
+const { iniciarSesion } = require('./helpers/sesionPersonal');
+let personal;
+beforeAll(async () => {
+  personal = await iniciarSesion(app);
+});
 const db = require('../src/server/db');
 
 function crearTurno(servicioId, prioridad = 'normal') {
@@ -31,7 +36,7 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
     const preferencial = crearTurno(2, 'preferencial');
     crearTurno(1);
 
-    const primero = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const primero = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     expect(primero.status).toBe(201);
     expect(primero.body.id).toBe(preferencial);
     expect(primero.body.estado).toBe('en_atencion');
@@ -43,7 +48,7 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
   test('toma el primer turno en espera por número cuando no hay preferenciales', async () => {
     const a = crearTurno(1);
     crearTurno(2);
-    const res = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const res = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     expect(res.body.id).toBe(a);
     expect(res.body.codigo).toBe('C-001');
   });
@@ -51,14 +56,14 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
   test('solo toma turnos de los servicios que atiende el mostrador', async () => {
     crearTurno(1);
     const pago = crearTurno(3);
-    const res = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 2 });
+    const res = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 2 });
     expect(res.status).toBe(201);
     expect(res.body.id).toBe(pago);
   });
 
   test('registra el llamado y guarda el mostrador en el turno', async () => {
     const id = crearTurno(1);
-    await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     const turno = db.prepare('SELECT estado, mostrador_id, inicio_atencion FROM turnos WHERE id = ?').get(id);
     expect(turno.estado).toBe('en_atencion');
     expect(turno.mostrador_id).toBe(1);
@@ -69,13 +74,13 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
 
   test('usa el mostrador 1 si no se indica uno', async () => {
     crearTurno(1);
-    const res = await request(app).post('/api/recepcion/llamar-siguiente').send({});
+    const res = await personal.post('/api/recepcion/llamar-siguiente').send({});
     expect(res.status).toBe(201);
     expect(res.body.mostrador).toBe('Mostrador 1');
   });
 
   test('responde 409 si la fila está vacía', async () => {
-    const res = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const res = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('FILA_VACIA');
   });
@@ -83,8 +88,8 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
   test('no permite llamar a otro mientras haya uno en atención en el mismo mostrador', async () => {
     crearTurno(1);
     crearTurno(1);
-    await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
-    const res = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const res = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('YA_HAY_TURNO_EN_ATENCION');
   });
@@ -92,13 +97,13 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
   test('dos mostradores no se llevan el mismo turno', async () => {
     crearTurno(2);
     crearTurno(2);
-    const a = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
-    const b = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 2 });
+    const a = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const b = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 2 });
     expect(a.body.id).not.toBe(b.body.id);
   });
 
   test('rechaza un mostrador inexistente', async () => {
-    const res = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 99 });
+    const res = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 99 });
     expect(res.status).toBe(400);
     expect(res.body.codigo).toBe('MOSTRADOR_INVALIDO');
   });
@@ -107,7 +112,7 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
     delete process.env.IGNORAR_HORARIO;
     db.exec('UPDATE horarios_atencion SET activo = 0');
     const id = crearTurno(1);
-    const res = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const res = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     db.exec('UPDATE horarios_atencion SET activo = 1');
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('FUERA_DE_HORARIO');
@@ -118,13 +123,13 @@ describe('POST /api/recepcion/llamar-siguiente', () => {
 describe('llamados y no asistió', () => {
   async function turnoLlamado() {
     const id = crearTurno(1);
-    await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     return id;
   }
 
   test('volver a llamar suma un llamado', async () => {
     const id = await turnoLlamado();
-    const res = await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    const res = await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
     expect(res.status).toBe(200);
     expect(res.body.llamados).toBe(2);
     expect(res.body.puede_marcar_no_asistio).toBe(false);
@@ -132,11 +137,11 @@ describe('llamados y no asistió', () => {
 
   test('no se puede llamar más veces que el máximo configurado', async () => {
     const id = await turnoLlamado();
-    await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
-    const tercero = await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    const tercero = await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
     expect(tercero.body.llamados).toBe(3);
     expect(tercero.body.puede_marcar_no_asistio).toBe(true);
-    const cuarto = await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    const cuarto = await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
     expect(cuarto.status).toBe(409);
     expect(cuarto.body.codigo).toBe('MAXIMO_LLAMADOS');
     const { total } = db.prepare('SELECT COUNT(*) AS total FROM llamados WHERE turno_id = ?').get(id);
@@ -145,7 +150,7 @@ describe('llamados y no asistió', () => {
 
   test('no se puede marcar no asistió antes de completar los llamados', async () => {
     const id = await turnoLlamado();
-    const res = await request(app).patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
+    const res = await personal.patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('LLAMADOS_INSUFICIENTES');
     expect(db.prepare('SELECT estado FROM turnos WHERE id = ?').get(id).estado).toBe('en_atencion');
@@ -154,14 +159,14 @@ describe('llamados y no asistió', () => {
   test('tras los llamados máximos el turno pasa a no_asistio y la fila sigue', async () => {
     const id = await turnoLlamado();
     const siguiente = crearTurno(1);
-    await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
-    await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
 
-    const res = await request(app).patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
+    const res = await personal.patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
     expect(res.status).toBe(200);
     expect(res.body.estado).toBe('no_asistio');
 
-    const llamada = await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const llamada = await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
     expect(llamada.status).toBe(201);
     expect(llamada.body.id).toBe(siguiente);
   });
@@ -169,27 +174,27 @@ describe('llamados y no asistió', () => {
   test('el máximo de llamados sale de la configuración', async () => {
     db.exec("UPDATE configuracion SET valor = '2' WHERE clave = 'max_llamados'");
     const id = await turnoLlamado();
-    const segundo = await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
+    const segundo = await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 1 });
     expect(segundo.body.max_llamados).toBe(2);
     expect(segundo.body.puede_marcar_no_asistio).toBe(true);
-    const res = await request(app).patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
+    const res = await personal.patch(`/api/recepcion/turnos/${id}/no-asistio`).send({ mostrador_id: 1 });
     expect(res.status).toBe(200);
   });
 
   test('no se puede operar un turno de otro mostrador ni uno que no está en atención', async () => {
     const id = await turnoLlamado();
-    const otro = await request(app).post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 2 });
+    const otro = await personal.post(`/api/recepcion/turnos/${id}/llamar`).send({ mostrador_id: 2 });
     expect(otro.status).toBe(409);
     expect(otro.body.codigo).toBe('TURNO_NO_LLAMABLE');
 
     const enEspera = crearTurno(1);
-    const res = await request(app).patch(`/api/recepcion/turnos/${enEspera}/no-asistio`).send({ mostrador_id: 1 });
+    const res = await personal.patch(`/api/recepcion/turnos/${enEspera}/no-asistio`).send({ mostrador_id: 1 });
     expect(res.status).toBe(409);
     expect(res.body.codigo).toBe('TURNO_NO_LLAMABLE');
   });
 
   test('responde 404 si el turno no existe', async () => {
-    const res = await request(app).post('/api/recepcion/turnos/9999/llamar').send({ mostrador_id: 1 });
+    const res = await personal.post('/api/recepcion/turnos/9999/llamar').send({ mostrador_id: 1 });
     expect(res.status).toBe(404);
     expect(res.body.codigo).toBe('TURNO_NO_ENCONTRADO');
   });
@@ -201,9 +206,9 @@ describe('GET /api/recepcion/fila', () => {
     crearTurno(2, 'preferencial');
     crearTurno(1);
     crearTurno(3);
-    await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 2 });
+    await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 2 });
 
-    const res = await request(app).get('/api/recepcion/fila?mostrador_id=1');
+    const res = await personal.get('/api/recepcion/fila?mostrador_id=1');
     expect(res.status).toBe(200);
     expect(res.body.abierto).toBe(true);
     expect(res.body.mostrador).toEqual({ id: 1, nombre: 'Mostrador 1' });
@@ -218,8 +223,8 @@ describe('GET /api/recepcion/fila', () => {
   test('indica el turno en atención del mostrador y no permite llamar otro', async () => {
     crearTurno(1);
     crearTurno(1);
-    await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
-    const res = await request(app).get('/api/recepcion/fila?mostrador_id=1');
+    await personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 });
+    const res = await personal.get('/api/recepcion/fila?mostrador_id=1');
     expect(res.body.en_atencion.codigo).toBe('C-001');
     expect(res.body.en_atencion.llamados).toBe(1);
     expect(res.body.fila).toHaveLength(1);
@@ -230,7 +235,7 @@ describe('GET /api/recepcion/fila', () => {
     delete process.env.IGNORAR_HORARIO;
     db.exec('UPDATE horarios_atencion SET activo = 0');
     crearTurno(1);
-    const res = await request(app).get('/api/recepcion/fila');
+    const res = await personal.get('/api/recepcion/fila');
     db.exec('UPDATE horarios_atencion SET activo = 1');
     expect(res.status).toBe(200);
     expect(res.body.abierto).toBe(false);
@@ -238,8 +243,41 @@ describe('GET /api/recepcion/fila', () => {
   });
 
   test('rechaza un mostrador inválido', async () => {
-    const res = await request(app).get('/api/recepcion/fila?mostrador_id=abc');
+    const res = await personal.get('/api/recepcion/fila?mostrador_id=abc');
     expect(res.status).toBe(400);
     expect(res.body.codigo).toBe('MOSTRADOR_INVALIDO');
+  });
+});
+
+describe('Acceso a recepción', () => {
+  test('sin sesión no se puede ver la fila ni llamar ni atender turnos', async () => {
+    expect((await request(app).get('/api/recepcion/fila?mostrador_id=1')).status).toBe(401);
+    expect((await request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: 1 })).status).toBe(401);
+    expect((await request(app).post('/api/recepcion/turnos/1/llamar').send({ mostrador_id: 1 })).status).toBe(401);
+    expect((await request(app).patch('/api/recepcion/turnos/1/no-asistio').send({ mostrador_id: 1 })).status).toBe(401);
+    expect((await request(app).patch('/api/recepcion/turnos/1/atendido').send({ mostrador_id: 1 })).status).toBe(401);
+  });
+
+  test('un recepcionista con sesión puede ver la fila', async () => {
+    const recepcionista = await iniciarSesion(app, 'recepcion1', 'recepcion123');
+    expect((await recepcionista.get('/api/recepcion/fila?mostrador_id=1')).status).toBe(200);
+  });
+
+  test('un recepcionista siempre trabaja en el mostrador de su sesión', async () => {
+    const recepcionista = await iniciarSesion(app, 'recepcion2', 'recepcion123');
+    const res = await recepcionista.get('/api/recepcion/fila?mostrador_id=1');
+    expect(res.status).toBe(200);
+    expect(res.body.mostrador.id).toBe(2);
+  });
+
+  test('un administrador puede elegir el mostrador', async () => {
+    const res = await personal.get('/api/recepcion/fila?mostrador_id=2');
+    expect(res.status).toBe(200);
+    expect(res.body.mostrador.id).toBe(2);
+  });
+
+  test('un administrador con sesión también puede ver la fila', async () => {
+    const admin = await iniciarSesion(app, 'admin', 'admin123');
+    expect((await admin.get('/api/recepcion/fila?mostrador_id=1')).status).toBe(200);
   });
 });

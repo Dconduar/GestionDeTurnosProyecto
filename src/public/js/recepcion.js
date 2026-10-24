@@ -26,7 +26,11 @@
     filaContenedor: document.getElementById('fila-contenedor'),
     filaCuerpo: document.getElementById('fila-cuerpo'),
     otrosVacio: document.getElementById('otros-vacio'),
-    otrosLista: document.getElementById('otros-lista')
+    otrosLista: document.getElementById('otros-lista'),
+    logo: document.getElementById('logo'),
+    enlaceInicio: document.getElementById('enlace-inicio'),
+    usuarioActual: document.getElementById('usuario-actual'),
+    cerrarSesion: document.getElementById('cerrar-sesion')
   };
 
   var mostradorId = leerMostrador();
@@ -72,6 +76,10 @@
 
   function pedirJson(url, opciones) {
     return fetch(url, opciones).then(function (res) {
+      if (res.status === 401) {
+        window.location.href = '/login.html';
+        return new Promise(function () {});
+      }
       return res.json().catch(function () { return {}; }).then(function (cuerpo) {
         if (!res.ok) {
           var error = new Error(cuerpo.error || 'Ocurrió un error.');
@@ -288,6 +296,35 @@
     consultar();
   });
 
-  consultar();
-  setInterval(consultar, INTERVALO_MS);
+  el.cerrarSesion.addEventListener('click', function () {
+    var salir = function () { window.location.href = '/login.html'; };
+    fetch('/api/admin/logout', { method: 'POST' }).then(salir, salir);
+  });
+
+  function iniciar() {
+    pedirJson('/api/admin/sesion')
+      .then(function (usuario) {
+        el.usuarioActual.textContent = usuario.nombre;
+        el.usuarioActual.hidden = false;
+        el.cerrarSesion.hidden = false;
+
+        if (usuario.rol === 'administrador') {
+          el.enlaceInicio.hidden = false;
+          el.logo.href = '/admin.html';
+        } else if (usuario.mostrador_id) {
+          mostradorId = String(usuario.mostrador_id);
+          el.mostrador.disabled = true;
+        }
+
+        consultar();
+        setInterval(consultar, INTERVALO_MS);
+      })
+      .catch(function () {
+        el.cargando.hidden = true;
+        el.avisoConexion.hidden = false;
+        setTimeout(iniciar, INTERVALO_MS);
+      });
+  }
+
+  iniciar();
 })();

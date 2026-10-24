@@ -8,6 +8,11 @@ process.env.DB_PATH = RUTA_DB;
 const Database = require('better-sqlite3');
 const request = require('supertest');
 const app = require('../src/server/app');
+const { iniciarSesion } = require('./helpers/sesionPersonal');
+let personal;
+beforeAll(async () => {
+  personal = await iniciarSesion(app);
+});
 const db = require('../src/server/db');
 const solicitudesSimultaneas = require('./helpers/solicitudesSimultaneas');
 
@@ -29,7 +34,7 @@ function crearMostrador(nombre, servicios) {
 }
 
 function llamar(mostradorId) {
-  return request(app).post('/api/recepcion/llamar-siguiente').send({ mostrador_id: mostradorId });
+  return personal.post('/api/recepcion/llamar-siguiente').send({ mostrador_id: mostradorId });
 }
 
 function turnos() {
