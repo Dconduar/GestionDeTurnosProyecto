@@ -32,7 +32,6 @@
     filaAviso: document.getElementById('fila-aviso'),
     btnCancelar: document.getElementById('btn-cancelar'),
     btnNuevo: document.getElementById('btn-nuevo'),
-    btnProbar: document.getElementById('btn-probar'),
   };
 
   var INTERVALO_FILA_MS = 2000;
@@ -40,6 +39,7 @@
   var consultandoFila = false;
   var estadoMostrado = null;
   var mostradorMostrado = null;
+  var prioridadMostrada = null;
   var llamadosVistos = null;
 
   var TITULO_ORIGINAL = document.title;
@@ -173,8 +173,7 @@
     osciladores.push(osc);
   }
 
-  function alToque(e) {
-    if (e && e.target && e.target.closest && e.target.closest('#btn-probar')) return;
+  function alToque() {
     desbloquearAudio();
     if (parpadeo !== null) detenerAviso();
   }
@@ -427,11 +426,13 @@
 
     if (turno.estado !== 'en_atencion') detenerAviso();
     mostradorMostrado = turno.mostrador || null;
+    prioridadMostrada = turno.prioridad;
     var guardado = leerTurnoGuardado();
 
     el.codigo.textContent = turno.codigo;
     el.servicio.textContent =
-      'Servicio: ' + turno.servicio.nombre;
+      'Servicio: ' + turno.servicio.nombre +
+      (turno.prioridad === 'preferencial' ? ' · Preferencial' : '');
 
     el.estado.textContent =
       TEXTO_ESTADO[turno.estado] || turno.estado;
@@ -484,7 +485,6 @@
 
     el.btnCancelar.disabled = cancelando;
     el.btnNuevo.hidden = !final;
-    el.btnProbar.hidden = final;
 
     limpiarAviso();
     mostrarVista('turno');
@@ -514,7 +514,7 @@
     var mio = fila.mi_turno;
     var enAtencion = fila.en_atencion || [];
 
-        el.filaAtendiendo.textContent = '';
+    el.filaAtendiendo.textContent = '';
     if (enAtencion.length === 0) {
       el.filaAtendiendo.textContent = 'Nadie por ahora';
     }
@@ -524,7 +524,7 @@
       linea.className = 'fila-linea';
       linea.textContent = t.mostrador ? t.codigo + ' (' + t.mostrador + ')' : t.codigo;
       el.filaAtendiendo.appendChild(linea);
-    });;
+    });
 
     var esperando = mio && mio.estado === 'esperando';
 
@@ -565,8 +565,11 @@
         }
 
 
-        if (mio.estado === estadoMostrado && mio.mostrador === mostradorMostrado) return;
-
+        if (
+          mio.estado === estadoMostrado &&
+          mio.mostrador === mostradorMostrado &&
+          mio.prioridad === prioridadMostrada
+        ) return;
         return pedirJson('/api/turnos/' + encodeURIComponent(turnoId), { cache: 'no-store' })
           .then(function (turno) {
             dibujarTurno(turno);
@@ -614,7 +617,7 @@
     }
 
     var confirmado = window.confirm(
-      '¿Estás segura de que deseas cancelar tu turno?'
+      '¿Deseas cancelar tu turno?'
     );
 
     if (!confirmado) return;
@@ -697,13 +700,6 @@
         }
       });
   }
-
-  el.btnProbar.addEventListener('click', function () {
-    desbloquearAudio();
-    audioDesbloqueado = true;
-    sonar();
-    try { if (navigator.vibrate) navigator.vibrate(200); } catch (e) { /* sin vibración */ }
-  });
 
   el.btnTomar.addEventListener('click', tomarTurno);
   el.btnCancelar.addEventListener('click', cancelarTurno);

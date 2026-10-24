@@ -9,7 +9,9 @@ const recepcion = require('./routes/recepcion');
 const admin = require('./routes/admin');
 const reportes = require('./routes/reportes');
 const qr = require('./routes/qr');
-  crearUsuariosIniciales();
+
+crearUsuariosIniciales();
+
 const app = express();
 
 app.use(express.json());

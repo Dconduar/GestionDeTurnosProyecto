@@ -22,4 +22,12 @@ function horarioPublico() {
   return horarioDeHoy().map((h) => ({ inicio: h.hora_inicio, fin: h.hora_fin }));
 }
 
-module.exports = { horarioDeHoy, atencionAbierta, horarioPublico };
+function responderFueraDeHorario(res) {
+  return res.status(409).json({
+    error: 'La atención está cerrada en este momento.',
+    codigo: 'FUERA_DE_HORARIO',
+    horario_hoy: horarioPublico(),
+  });
+}
+
+module.exports = { atencionAbierta, horarioPublico, responderFueraDeHorario };

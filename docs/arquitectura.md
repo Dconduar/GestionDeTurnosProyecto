@@ -1,6 +1,6 @@
 # Arquitectura seleccionada y justificación
 
-Issue: GES-39 · Entregable: `docs/arquitectura.md`
+Issue: GES-39 · Entregable: `docs/arquitectura.md` · Actualizado el 24 de octubre de 2026 para reflejar el código actual
 
 Este documento explica la arquitectura elegida para el sistema de Gestión de Turnos, por qué es la adecuada para el problema y qué alternativas se descartaron. Sirve de base para los componentes y dependencias (GES-40) y para los modelos C4 (GES-41).
 
@@ -22,7 +22,7 @@ Es un sistema de **un solo local**, con decenas de personas conectadas a la vez 
 
 | Capa | Qué contiene | Tecnología | Dónde está |
 |---|---|---|---|
-| Presentación | Pantallas del cliente, del recepcionista y del administrador, que se ejecutan en el navegador | HTML, CSS y JavaScript estándar | `src/public/` |
+| Presentación | Pantallas del cliente, del recepcionista, del administrador, de inicio de sesión y del código QR, que se ejecutan en el navegador | HTML, CSS y JavaScript estándar | `src/public/` |
 | Aplicación (API) | Servidor que expone una API REST en JSON, aplica las reglas del negocio (orden de la fila, máximo de llamados, horario de atención, transiciones de estado) y sirve las pantallas | Node.js y Express | `src/server/` |
 | Datos | Persistencia de turnos, llamados, servicios, mostradores, horarios y configuración | SQLite (`better-sqlite3`) | `database/schema.sql` y `src/server/db.js` |
 
@@ -34,20 +34,24 @@ flowchart LR
         CL["Pantalla del cliente<br/>cliente.html"]
         RE["Panel del recepcionista<br/>recepcion.html"]
         AD["Pantalla del administrador<br/>admin.html"]
+        LO["Inicio de sesión y QR<br/>login.html, qr.html"]
     end
 
     subgraph SRV["Servidor Node.js + Express"]
-        API["API REST en JSON<br/>/api/turnos<br/>/api/recepcion<br/>/api/admin<br/>/api/reportes"]
-        REG["Reglas del negocio<br/>fila, llamados, horario,<br/>estados del turno"]
+        SES["Sesión y roles<br/>auth.js"]
+        API["API REST en JSON<br/>/api/turnos<br/>/api/recepcion<br/>/api/admin<br/>/api/reportes<br/>/api/qr"]
+        REG["Reglas del negocio<br/>fila, llamados, horario,<br/>estimación, estados del turno"]
         EST["Archivos estáticos<br/>src/public"]
     end
 
     DB[("SQLite<br/>database/turnos.db")]
 
-    CL -- "HTTP + JSON" --> API
+    CL -- "HTTP + JSON<br/>consulta cada 2 s" --> API
     RE -- "HTTP + JSON<br/>consulta cada 2 s" --> API
     AD -- "HTTP + JSON" --> API
+    LO -- "HTTP + JSON" --> API
     NAV -- "descarga de pantallas" --> EST
+    API -- "rutas del personal" --> SES
     API --> REG
     REG -- "consultas y transacciones" --> DB
 ```
@@ -56,20 +60,28 @@ flowchart LR
 
 1. El navegador descarga la pantalla (HTML, CSS y JavaScript) desde el servidor.
 2. El JavaScript de la pantalla llama a la API con `fetch` y recibe JSON.
-3. La ruta de Express valida la petición y aplica las reglas del negocio (por ejemplo, que la atención esté abierta o que el turno esté `en_atencion`).
-4. Las operaciones que cambian el estado se ejecutan dentro de una **transacción SQLite**, para que no queden datos a medias ni se repitan números.
-5. El servidor responde con JSON, o con un error y un código claro (`FUERA_DE_HORARIO`, `FILA_VACIA`, etc.) que la pantalla convierte en un mensaje en español.
+3. Si la ruta es del personal (recepción, administración o QR), se comprueba que haya sesión iniciada y que el rol tenga permiso.
+4. La ruta de Express valida la petición y aplica las reglas del negocio (por ejemplo, que la atención esté abierta o que el turno esté `en_atencion`).
+5. Las operaciones que cambian el estado se ejecutan dentro de una **transacción SQLite**, para que no queden datos a medias ni se repitan números.
+6. El servidor responde con JSON, o con un error y un código claro (`FUERA_DE_HORARIO`, `FILA_VACIA`, etc.) que la pantalla convierte en un mensaje en español.
 
 ### 2.3 Estructura del código
 
 ```
-src/public/              Pantallas y su JavaScript (capa de presentación)
-src/server/app.js        Configuración de Express y montaje de rutas
-src/server/routes/       Un módulo por área: turnos, recepcion, admin, reportes
-src/server/horario.js    Regla de horario de atención compartida
-src/server/db.js         Conexión a SQLite y carga del esquema
-database/schema.sql      Esquema, datos de ejemplo y configuración
+src/public/                       Pantallas y su JavaScript (capa de presentación)
+src/server/app.js                 Configuración de Express y montaje de rutas
+src/server/server.js              Punto de entrada
+src/server/routes/                Un módulo por área: turnos, recepcion, admin, reportes, qr
+src/server/auth.js                Sesión, hash de contraseñas y control de roles
+src/server/usuarios-iniciales.js  Usuarios de prueba creados si la base está vacía
+src/server/horario.js             Regla de horario de atención compartida
+src/server/estimacion.js          Cálculo de la espera estimada
+src/server/fila.js                Vista pública de la fila y código del turno
+src/server/db.js                  Conexión a SQLite y carga del esquema
+database/schema.sql               Esquema, datos de ejemplo y configuración
 ```
+
+El detalle de cada componente y sus dependencias está en [`componentes.md`](componentes.md).
 
 Cada área del servidor vive en su propio archivo de rutas, así el equipo puede trabajar en paralelo sin pisarse.
 
@@ -95,11 +107,11 @@ Cada área del servidor vive en su propio archivo de rutas, así el equipo puede
 
 | Requisito | Cómo lo resuelve la arquitectura |
 |---|---|
-| **Actualización de la fila en 2 s (NFR-02)** | Las pantallas consultan la API con `fetch` cada 2 segundos (`setInterval`). Si falla la conexión, muestran un aviso claro y reintentan solas. |
+| **Actualización de la fila en 2 s (NFR-02)** | La pantalla del cliente y el panel del recepcionista consultan la API con `fetch` cada 2 segundos (`setInterval`). Si falla la conexión, muestran un aviso claro y reintentan solas. La pantalla del cliente pausa la consulta mientras la pestaña está oculta y la retoma al volver. |
 | **Hasta 100 clientes simultáneos** | Cien pantallas consultando cada 2 segundos son unas 50 peticiones por segundo, que son lecturas cortas sobre SQLite. El servidor Node.js las atiende sin bloquearse. Es una estimación de diseño; se confirma con pruebas de carga (SC-001 de `specs/001-client-queue-flow/spec.md`). |
 | **Números de turno únicos y sin condiciones de carrera (FR-013)** | El consecutivo del día se calcula dentro de una transacción de escritura y hay una restricción única `(fecha, numero)` en la base de datos. Llamar al siguiente turno también es una transacción, así que dos mostradores no se llevan el mismo turno. |
 | **Persistencia y recuperación de errores (NFR-05)** | Todo el estado vive en SQLite y no en la memoria del servidor. Si el servidor se reinicia, los turnos siguen ahí. El modo WAL de SQLite mantiene la base consistente ante cierres inesperados, y los errores internos devuelven una respuesta controlada sin exponer detalles. |
-| **Seguridad y privacidad (NFR-04)** | El sistema no guarda nombre, teléfono ni correo del cliente. Para cancelar, el cliente recibe un token privado y la base solo guarda su hash. Las contraseñas del personal se guardan solo como hash (`bcryptjs`). El acceso de recepcionistas y administradores se hará con sesión y rol. |
+| **Seguridad y privacidad (NFR-04)** | El sistema no guarda nombre, teléfono ni correo del cliente. Para cancelar, el cliente recibe un token privado y la base solo guarda su hash. Las contraseñas del personal se guardan solo como hash (`bcryptjs`). Recepción, administración y QR exigen sesión (`express-session`, cookie `httpOnly`) y un rol con permiso; el recepcionista queda fijado a su mostrador. |
 | **Disponibilidad y diseño responsive (NFR-03)** | La atención solo se acepta dentro de los horarios configurados, validados en el servidor, con un mensaje claro fuera de horario. Las pantallas usan CSS responsive para celular, tablet y computadora. |
 | **Parámetros configurables (NFR-08)** | Valores como el máximo de llamados y los de la estimación están en la tabla `configuracion` y no en el código. |
 
@@ -108,7 +120,8 @@ Cada área del servidor vive en su propio archivo de rutas, así el equipo puede
 - **Un solo servidor.** Si cae, el sistema no responde hasta reiniciarlo. Es aceptable para un solo local, y los datos no se pierden porque están en disco.
 - **SQLite admite una escritura a la vez.** Para este volumen no es un problema, ya que las escrituras son cortas, pero no serviría para muchas sucursales escribiendo al mismo tiempo.
 - **La actualización cada 2 s genera tráfico constante** mientras haya pantallas abiertas. Es poco con 100 usuarios, pero crece con el número de pantallas.
-- **Sesiones de personal en el servidor.** El inicio de sesión de recepcionistas y administradores todavía no está implementado, así que por ahora el panel del recepcionista usa un selector de mostrador.
+- **Sesiones en memoria.** Las sesiones del personal se guardan en la memoria del servidor (almacén por defecto de `express-session`). Si el servidor se reinicia, el personal debe volver a iniciar sesión; los turnos no se pierden porque están en SQLite.
+- **Reportes sin protección.** La ruta `/api/reportes` todavía no exige sesión de administrador (ver `componentes.md`, sección 5).
 
 ## 7. Evolución prevista
 
