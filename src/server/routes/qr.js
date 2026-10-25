@@ -16,6 +16,26 @@ function esLocal(host) {
   return nombre === 'localhost' || nombre === '127.0.0.1' || nombre === '::1' || nombre === '[::1]';
 }
 
+const NOMBRE_WIFI = /wi-?fi|wlan|wireless|inal[aá]mbric/i;
+const NOMBRE_VIRTUAL = /vmware|virtualbox|vbox|vethernet|hyper-v|wsl|docker|loopback/i;
+
+
+function redesLocales() {
+  const interfaces = os.networkInterfaces();
+  const redes = [];
+  Object.keys(interfaces).forEach((nombre) => {
+    (interfaces[nombre] || []).forEach((dato) => {
+      const esIPv4 = dato.family === 'IPv4' || dato.family === 4;
+      if (esIPv4 && !dato.internal && !dato.address.startsWith('169.254.')) {
+        redes.push({ nombre, direccion: dato.address });
+      }
+    });
+  });
+
+  const wifi = redes.filter((r) => NOMBRE_WIFI.test(r.nombre));
+  return wifi.length > 0 ? wifi : redes.filter((r) => !NOMBRE_VIRTUAL.test(r.nombre));
+}
+
 function listarDirecciones(req) {
   const puerto = req.socket.localPort;
   const direcciones = [];
@@ -30,14 +50,8 @@ function listarDirecciones(req) {
     direcciones.push({ etiqueta: 'Dirección que estás usando ahora', url: `${protocolo}://${host}/cliente.html` });
   }
 
-  const interfaces = os.networkInterfaces();
-  Object.keys(interfaces).forEach((nombre) => {
-    (interfaces[nombre] || []).forEach((dato) => {
-      const esIPv4 = dato.family === 'IPv4' || dato.family === 4;
-      if (esIPv4 && !dato.internal && !dato.address.startsWith('169.254.')) {
-        direcciones.push({ etiqueta: `Red local · ${nombre}`, url: `http://${dato.address}:${puerto}/cliente.html` });
-      }
-    });
+  redesLocales().forEach((red) => {
+    direcciones.push({ etiqueta: `Red local · ${red.nombre}`, url: `http://${red.direccion}:${puerto}/cliente.html` });
   });
 
   return direcciones;

@@ -1,19 +1,12 @@
 (function () {
   'use strict';
 
-  const selector = document.getElementById('direccion');
   const imagen = document.getElementById('imagen-qr');
-  const texto = document.getElementById('texto-direccion');
   const mensaje = document.getElementById('mensaje');
 
   function mostrarMensaje(contenido) {
     mensaje.textContent = contenido;
     mensaje.hidden = false;
-  }
-
-  function mostrarQr(indice) {
-    imagen.src = '/api/qr/imagen?i=' + indice + '&t=' + Date.now();
-    texto.textContent = selector.options[indice].dataset.url;
   }
 
   async function iniciar() {
@@ -35,19 +28,10 @@
       return mostrarMensaje('No se detectó ninguna red. Conecta la computadora a una red WiFi y recarga la página.');
     }
 
-    datos.direcciones.forEach(function (d, i) {
-      const opcion = document.createElement('option');
-      opcion.value = i;
-      opcion.textContent = d.etiqueta + ' — ' + d.url;
-      opcion.dataset.url = d.url;
-      selector.appendChild(opcion);
-    });
-
-    selector.addEventListener('change', function () { mostrarQr(Number(selector.value)); });
     document.getElementById('imprimir').addEventListener('click', function () { window.print(); });
 
     document.getElementById('contenido').hidden = false;
-    mostrarQr(0);
+    imagen.src = '/api/qr/imagen?i=0&t=' + Date.now();
   }
 
   iniciar();

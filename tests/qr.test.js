@@ -87,6 +87,36 @@ describe('Acceso por QR', () => {
     expect(intento.body).toBe(normal.body);
   });
 
+  describe('redes locales', () => {
+    const os = require('os');
+    const red = (address) => [{ address, family: 'IPv4', internal: false }];
+
+    afterEach(() => jest.restoreAllMocks());
+
+    test('si hay Wi-Fi, solo ofrece el Wi-Fi', async () => {
+      jest.spyOn(os, 'networkInterfaces').mockReturnValue({
+        Ethernet: red('192.168.56.1'),
+        'VMware Network Adapter VMnet1': red('192.168.148.1'),
+        'VMware Network Adapter VMnet8': red('192.168.79.1'),
+        'Wi-Fi': red('172.20.10.3'),
+      });
+      const res = await admin.get('/api/qr/direcciones');
+      expect(res.body.direcciones).toEqual([
+        { etiqueta: 'Red local · Wi-Fi', url: expect.stringMatching(/^http:\/\/172\.20\.10\.3:\d+\/cliente\.html$/) },
+      ]);
+    });
+
+    test('sin Wi-Fi, ofrece las redes que no son virtuales', async () => {
+      jest.spyOn(os, 'networkInterfaces').mockReturnValue({
+        Ethernet: red('10.0.0.5'),
+        'VMware Network Adapter VMnet8': red('192.168.79.1'),
+        'vEthernet (WSL)': red('172.28.0.1'),
+      });
+      const res = await admin.get('/api/qr/direcciones');
+      expect(res.body.direcciones.map((d) => d.etiqueta)).toEqual(['Red local · Ethernet']);
+    });
+  });
+
   test('rechaza índices inválidos o inexistentes', async () => {
     process.env.PUBLIC_URL = 'https://demo.ejemplo.com';
     expect((await admin.get('/api/qr/imagen')).status).toBe(400);
